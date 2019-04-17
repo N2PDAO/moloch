@@ -221,7 +221,7 @@ contract Moloch {
 
         // count vote
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes.add(member.shares);
+            proposal.yesVotes = proposal.yesVotes.add(member.shares + member.delegatedShares);
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
