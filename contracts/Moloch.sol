@@ -134,7 +134,7 @@ contract Moloch {
 
         summoningTime = now;
 
-        members[summoner] = Member(summoner, 1, true, 0);
+        members[summoner] = Member(summoner, 1, 0, true, 0);
         memberAddressByDelegateKey[summoner] = summoner;
         totalShares = 1;
 
@@ -277,7 +277,7 @@ contract Moloch {
                 }
 
                 // use applicant address as delegateKey by default
-                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, true, 0);
+                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, 0, true, 0);
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
             }
 
