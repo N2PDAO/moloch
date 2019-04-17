@@ -8,8 +8,8 @@ const Moloch = artifacts.require('./Moloch')
 const GuildBank = artifacts.require('./GuildBank')
 const Token = artifacts.require('./Token')
 
-// const GnosisSafe = artifacts.require("./GnosisSafePersonalEdition.json")
-// const ProxyFactory = artifacts.require("./ProxyFactory.json")
+const GnosisSafe = artifacts.require("./GnosisSafePersonalEdition.json")
+const ProxyFactory = artifacts.require("./ProxyFactory.json")
 
 const utils = require('./utils')
 const safeUtils = require('./utilsPersonalSafe')
