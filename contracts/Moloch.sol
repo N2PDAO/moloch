@@ -56,6 +56,7 @@ contract Moloch {
     struct Member {
         address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
         uint256 shares; // the # of shares assigned to this member
+        uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO 
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
     }

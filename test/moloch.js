@@ -8,8 +8,8 @@ const Moloch = artifacts.require('./Moloch')
 const GuildBank = artifacts.require('./GuildBank')
 const Token = artifacts.require('./Token')
 
-const GnosisSafe = artifacts.require("./GnosisSafePersonalEdition.sol")
-const ProxyFactory = artifacts.require("./ProxyFactory.sol")
+// const GnosisSafe = artifacts.require("./GnosisSafePersonalEdition.json")
+// const ProxyFactory = artifacts.require("./ProxyFactory.json")
 
 const utils = require('./utils')
 const safeUtils = require('./utilsPersonalSafe')
@@ -263,9 +263,9 @@ contract('Moloch', accounts => {
     const guildBankAddress = await moloch.guildBank()
     guildBank = await GuildBank.at(guildBankAddress)
     token = await Token.deployed()
-
-    proxyFactory = await ProxyFactory.deployed()
-    gnosisSafeMasterCopy = await GnosisSafe.deployed()
+    // 
+    // proxyFactory = await ProxyFactory.deployed()
+    // gnosisSafeMasterCopy = await GnosisSafe.deployed()
   })
 
   beforeEach(async () => {
