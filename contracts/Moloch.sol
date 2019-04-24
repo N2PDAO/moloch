@@ -81,7 +81,7 @@ contract Moloch {
 
     mapping (address => Member) public members;
     mapping (address => address) public memberAddressByDelegateKey;
-    // mapping of shares delegated from one member to another delegatedShareMembers
+    mapping(address => mapping(address => uint256)) public sharesDelegated; // mapping of delegator => delegatee => shares delegated
     Proposal[] public proposalQueue;
 
     /********
@@ -389,15 +389,15 @@ contract Moloch {
     **************************/
 
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
-        // update mapping in line 82 
-        require(sharesToDelegate<=members[msg.sender].shares, "attempting to delegate more shares than you have");  
+        sharesDelegated[msg.sender][delegateTo] = [sharesToDelegate];
+        require(sharesToDelegate<=members[msg.sender].shares, "attempting to delegate more shares than you own");  
         members[msg.sender].shares.sub(sharesToDelegate);
         members[delegateTo].delegatedShares.add(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate); 
     } 
 
     function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
-        // require sharesToRetrieve <= amount shared in mapping sharesToRetrieve line 82 
+        require(sharesToRetrieve<=sharesDelegated[retrieveFrom][sharesToRetrieve], "attempting to retrieve more shares that you delegated");
         members[retrieveFrom].delegatedShares.sub(sharesToRetrieve);
         members[msg.sender].shares.add(sharesToRetrieve); 
         emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve); 
