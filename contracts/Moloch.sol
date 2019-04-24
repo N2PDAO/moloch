@@ -40,6 +40,8 @@ contract Moloch {
     event Abort(uint256 indexed proposalIndex, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event SummonComplete(address indexed summoner, uint256 shares);
+    event SharesDelegated(address indexed from, address indexed to, uint256 amount);
+    event SharesRetrieved(address indexed from, address indexed to, uint256 amount);
 
     /******************
     INTERNAL ACCOUNTING
@@ -79,6 +81,7 @@ contract Moloch {
 
     mapping (address => Member) public members;
     mapping (address => address) public memberAddressByDelegateKey;
+    // mapping of shares delegated from one member to another delegatedShareMembers
     Proposal[] public proposalQueue;
 
     /********
@@ -379,6 +382,25 @@ contract Moloch {
         member.delegateKey = newDelegateKey;
 
         emit UpdateDelegateKey(msg.sender, newDelegateKey);
+    }
+
+    /*************************
+    SHARE DELEGATION FUNCTIONS
+    **************************/
+
+    function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
+        // update mapping in line 82 
+        require(sharesToDelegate<=members[msg.sender].shares, "attempting to delegate more shares than you have");  
+        members[msg.sender].shares.sub(sharesToDelegate);
+        members[delegateTo].delegatedShares.add(sharesToDelegate);
+        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate); 
+    } 
+
+    function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
+        // require sharesToRetrieve <= amount shared in mapping sharesToRetrieve line 82 
+        members[retrieveFrom].delegatedShares.sub(sharesToRetrieve);
+        members[msg.sender].shares.add(sharesToRetrieve); 
+        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve); 
     }
 
     /***************
