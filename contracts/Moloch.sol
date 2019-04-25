@@ -389,17 +389,21 @@ contract Moloch {
     **************************/
 
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
+        Member storage member = members[msg.sender];
+        Member storage delegateMember = members[delegateTo];
         sharesDelegated[msg.sender][delegateTo] = [sharesToDelegate];
-        require(sharesToDelegate<=members[msg.sender].shares, "attempting to delegate more shares than you own");  
-        members[msg.sender].shares.sub(sharesToDelegate);
-        members[delegateTo].delegatedShares.add(sharesToDelegate);
+        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");  
+        member.shares.sub(sharesToDelegate);
+        delegateMember.delegatedShares.add(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate); 
     } 
 
     function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
-        require(sharesToRetrieve<=sharesDelegated[retrieveFrom][sharesToRetrieve], "attempting to retrieve more shares that you delegated");
-        members[retrieveFrom].delegatedShares.sub(sharesToRetrieve);
-        members[msg.sender].shares.add(sharesToRetrieve); 
+        Member storage member = members[msg.sender];
+        Member storage memberRetrieve = members[retrieveFrom];
+        require(sharesToRetrieve<=sharesDelegated[memberRetrieve][sharesToRetrieve], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
+        memberRetrieve.delegatedShares.sub(sharesToRetrieve);
+        member.shares.add(sharesToRetrieve); 
         emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve); 
     }
 
