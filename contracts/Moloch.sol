@@ -58,7 +58,7 @@ contract Moloch {
     struct Member {
         address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
         uint256 shares; // the # of shares assigned to this member
-        uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO 
+        uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
     }
@@ -391,20 +391,21 @@ contract Moloch {
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
-        sharesDelegated[msg.sender][delegateTo] = [sharesToDelegate];
-        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");  
+        uint256 inital_delegated_shares = sharesDelegated[msg.sender][delegateTo];     /// this two lines need to be there to not overwrite the inital delegation
+        sharesDelegated[msg.sender][delegateTo] = inital_delegated_shares.add(sharesToDelegate);
+        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
         member.shares.sub(sharesToDelegate);
         delegateMember.delegatedShares.add(sharesToDelegate);
-        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate); 
-    } 
+        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
+    }
 
     function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
-        require(sharesToRetrieve<=sharesDelegated[memberRetrieve][sharesToRetrieve], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
+        require(sharesToRetrieve<=sharesDelegated[msg.sender][retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
         memberRetrieve.delegatedShares.sub(sharesToRetrieve);
-        member.shares.add(sharesToRetrieve); 
-        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve); 
+        member.shares.add(sharesToRetrieve);
+        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
     }
 
     /***************
