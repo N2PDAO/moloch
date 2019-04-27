@@ -61,7 +61,7 @@ contract Moloch {
         uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
-        mapping (address => uint256) sharesDelegated;
+        mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
     }
 
     struct Proposal {
@@ -392,13 +392,10 @@ contract Moloch {
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
-        //uint256 inital_delegated_shares = sharesDelegated[msg.sender][delegateTo];     /// this two lines need to be there to not overwrite the inital delegation
-        //sharesDelegated[msg.sender][delegateTo] = inital_delegated_shares.add(sharesToDelegate);
         require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
         member.sharesDelegated[delegateTo].add(sharesToDelegate);
         member.shares.sub(sharesToDelegate);
         delegateMember.delegatedShares.add(sharesToDelegate);
-
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 
