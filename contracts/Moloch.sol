@@ -81,7 +81,7 @@ contract Moloch {
 
     mapping (address => Member) public members;
     mapping (address => address) public memberAddressByDelegateKey;
-    mapping(address => mapping(address => uint256)) public sharesDelegated; // mapping of delegator => delegatee => shares delegated
+    mapping (address => mapping(address => uint256)) public sharesDelegated; // mapping of delegator => delegatee => shares delegated
     Proposal[] public proposalQueue;
 
     /********
