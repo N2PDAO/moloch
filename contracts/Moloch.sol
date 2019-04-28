@@ -63,6 +63,7 @@ contract Moloch {
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
     }
+    
 
     struct Proposal {
         address proposer; // the member who submitted the proposal
@@ -394,8 +395,8 @@ contract Moloch {
         Member storage delegateMember = members[delegateTo];
         require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
         member.sharesDelegated[delegateTo].add(sharesToDelegate);
-        member.shares.sub(sharesToDelegate);
         delegateMember.delegatedShares.add(sharesToDelegate);
+        member.shares.sub(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 
