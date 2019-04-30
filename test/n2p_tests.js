@@ -5,10 +5,10 @@ const Token = artifacts.require('./Token')
 console.log(process.env.target)
 console.log(config)
 
-const abi = require('web3-eth-abi')
+import abi from 'web3-eth-abi';
 
-const HttpProvider = require(`ethjs-provider-http`)
-const EthRPC = require(`ethjs-rpc`)
+import HttpProvider from `ethjs-provider-http`;
+import EthRPC from `ethjs-rpc`;
 const ethRPC = new EthRPC(new HttpProvider('http://localhost:8545'))
 
 const BigNumber = web3.BigNumber
