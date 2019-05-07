@@ -7,7 +7,170 @@ const config = require('../migrations/config.json').test
 
 let moloch, guildBank, token
 
+/// define vars for RPC Control
+
+const abi = require('web3-eth-abi')
+
+const HttpProvider = require(`ethjs-provider-http`)
+const EthRPC = require(`ethjs-rpc`)
+const ethRPC = new EthRPC(new HttpProvider('http://localhost:8545'))
+
+const BigNumber = web3.BigNumber
+const BN = web3.utils.BN
+
+const should = require('chai').use(require('chai-as-promised')).use(require('chai-bignumber')(BigNumber)).should()
+
+const SolRevert = 'VM Exception while processing transaction: revert'
+
+
+/// Helper functions for EthRPC
+
+async function blockTime() {
+  const block = await web3.eth.getBlock('latest')
+  return block.timestamp
+}
+
+
+async function forceMine() {
+  return await ethRPC.sendAsync({method: `evm_mine`}, (err)=> {});
+}
+
+async function moveForwardPeriods(periods) {
+  const blocktimestamp = await blockTime()
+  const goToTime = config.PERIOD_DURATION_IN_SECONDS * periods
+  await ethRPC.sendAsync({
+    jsonrpc:'2.0', method: `evm_increaseTime`,
+    params: [goToTime],
+    id: 0
+  }, (err)=> {`error increasing time`});
+  await forceMine()
+  const updatedBlocktimestamp = await blockTime()
+  return true
+}
+
+
+
+async function snapshot() {
+  return new Promise((accept, reject) => {
+    ethRPC.sendAsync({method: `evm_snapshot`}, (err, result)=> {
+      if (err) {
+        reject(err)
+      } else {
+        accept(result)
+      }
+    })
+  })
+}
+
+async function restore(snapshotId) {
+  return new Promise((accept, reject) => {
+    ethRPC.sendAsync({method: `evm_revert`, params: [snapshotId]}, (err, result) => {
+      if (err) {
+        reject(err)
+      } else {
+        accept(result)
+      }
+    })
+  })
+}
+
+
+////////The TEST
+
+
 contract("Moloch", async accounts => {
+
+  // VERIFY PROCESS PROPOSAL - note: doesnt check forced reset of delegate key
+  const verifyProcessProposal = async (proposal, proposalIndex, proposer, processor, options) => {
+    const initialTotalSharesRequested = options.initialTotalSharesRequested ? options.initialTotalSharesRequested : 0
+    const initialTotalShares = options.initialTotalShares ? options.initialTotalShares : 0
+    const initialApplicantShares = options.initialApplicantShares ? options.initialApplicantShares : 0 // 0 means new member, > 0 means existing member
+    const initialMolochBalance = options.initialMolochBalance ? options.initialMolochBalance : 0
+    const initialGuildBankBalance = options.initialGuildBankBalance ? options.initialGuildBankBalance : 0
+    const initialApplicantBalance = options.initialApplicantBalance ? options.initialApplicantBalance : 0
+    const initialProposerBalance = options.initialProposerBalance ? options.initialProposerBalance : 0
+    const initialProcessorBalance = options.initialProcessorBalance ? options.initialProcessorBalance : 0
+    const expectedYesVotes = options.expectedYesVotes ? options.expectedYesVotes : 0
+    const expectedNoVotes = options.expectedNoVotes ? options.expectedNoVotes : 0
+    const expectedMaxSharesAtYesVote = options.expectedMaxSharesAtYesVote ? options.expectedMaxSharesAtYesVote : 0
+    const expectedFinalTotalSharesRequested = options.expectedFinalTotalSharesRequested ? options.expectedFinalTotalSharesRequested : 0
+    const didPass = typeof options.didPass == 'boolean' ? options.didPass : true
+    const aborted = typeof options.aborted == 'boolean' ? options.aborted : false
+
+    const proposalData = await moloch.proposalQueue.call(proposalIndex)
+    assert.equal(proposalData.yesVotes, expectedYesVotes)
+    assert.equal(proposalData.noVotes, expectedNoVotes)
+    assert.equal(proposalData.maxTotalSharesAtYesVote, expectedMaxSharesAtYesVote)
+    assert.equal(proposalData.processed, true)
+    assert.equal(proposalData.didPass, didPass)
+    assert.equal(proposalData.aborted, aborted)
+
+    const totalSharesRequested = await moloch.totalSharesRequested()
+    assert.equal(totalSharesRequested, expectedFinalTotalSharesRequested)
+
+    const totalShares = await moloch.totalShares()
+    assert.equal(totalShares, didPass && !aborted ? initialTotalShares + proposal.sharesRequested : initialTotalShares)
+
+    const molochBalance = await token.balanceOf(moloch.address)
+    assert.equal(molochBalance, initialMolochBalance - proposal.tokenTribute - config.PROPOSAL_DEPOSIT)
+
+    const guildBankBalance = await token.balanceOf(guildBank.address)
+    assert.equal(guildBankBalance, didPass && !aborted ? initialGuildBankBalance + proposal.tokenTribute : initialGuildBankBalance)
+
+    // proposer and applicant are different
+    if (proposer != proposal.applicant) {
+      const applicantBalance = await token.balanceOf(proposal.applicant)
+      assert.equal(applicantBalance, didPass && !aborted ? initialApplicantBalance : initialApplicantBalance + proposal.tokenTribute)
+
+      const proposerBalance = await token.balanceOf(proposer)
+      //assert.equal(proposerBalance, initialProposerBalance + config.PROPOSAL_DEPOSIT - config.PROCESSING_REWARD) //put in later
+
+    // proposer is applicant
+    } else {
+      const proposerBalance = await token.balanceOf(proposer)
+      const expectedBalance = didPass && !aborted
+        ? initialProposerBalance + config.PROPOSAL_DEPOSIT - config.PROCESSING_REWARD
+        : initialProposerBalance + config.PROPOSAL_DEPOSIT - config.PROCESSING_REWARD  + proposal.tokenTribute
+      assert.equal(proposerBalance, expectedBalance)
+    }
+
+    const processorBalance = await token.balanceOf(processor)
+    assert.equal(processorBalance, initialProcessorBalance + config.PROCESSING_REWARD)
+
+    if (didPass && !aborted) {
+      // existing member
+      if (initialApplicantShares > 0) {
+        const memberData = await moloch.members(proposal.applicant)
+        assert.equal(memberData.shares, proposal.sharesRequested + initialApplicantShares)
+
+      // new member
+      } else {
+        const newMemberData = await moloch.members(proposal.applicant)
+        assert.equal(newMemberData.delegateKey, proposal.applicant)
+        assert.equal(newMemberData.shares, proposal.sharesRequested)
+        assert.equal(newMemberData.exists, true)
+        assert.equal(newMemberData.highestIndexYesVote, 0)
+
+        const newMemberAddressByDelegateKey = await moloch.memberAddressByDelegateKey(proposal.applicant)
+        assert.equal(newMemberAddressByDelegateKey, proposal.applicant)
+      }
+    }
+  }
+
+  // VERIFY SUBMIT VOTE
+  const verifySubmitVote = async (proposal, proposalIndex, memberAddress, expectedVote, options) => {
+    const initialYesVotes = options.initialYesVotes ? options.initialYesVotes : 0
+    const initialNoVotes = options.initialNoVotes ? options.initialNoVotes : 0
+    const expectedMaxSharesAtYesVote = options.expectedMaxSharesAtYesVote ? options.expectedMaxSharesAtYesVote : 0
+
+    const proposalData = await moloch.proposalQueue.call(proposalIndex)
+    assert.equal(proposalData.yesVotes, initialYesVotes + (expectedVote == 1 ? 1 : 0))
+    assert.equal(proposalData.noVotes, initialNoVotes + (expectedVote == 1 ? 0 : 1))
+    assert.equal(proposalData.maxTotalSharesAtYesVote, expectedMaxSharesAtYesVote)
+
+    const memberVote = await moloch.getMemberProposalVote(memberAddress, proposalIndex)
+    assert.equal(memberVote, expectedVote)
+  }
 
 //// Verification of Proposals
 //// This Function is called from varios places
@@ -64,15 +227,34 @@ contract("Moloch", async accounts => {
   }
 
 //// start here
+  beforeEach(async() =>{
+
+    snapshotId = await snapshot()
+
+  })
+
+
+  afterEach(async () => {
+      await restore(snapshotId)
+    })
+
 
   before("deploy contracts", async () => {
     moloch = await Moloch.deployed()
     const guildBankAddress = await moloch.guildBank()
     guildBank = await GuildBank.at(guildBankAddress)
     token = await Token.deployed()
+
+    proposal1 = {
+      applicant: accounts[1],
+      tokenTribute: 100,
+      sharesRequested: 1,
+      details: "all hail moloch"
+    }
+
   })
   it('verify deployment parameters', async () => {
-    //const now = await blockTime()
+    //const now = await blockTime() 
 
     const approvedTokenAddress = await moloch.approvedToken()
     assert.equal(approvedTokenAddress, token.address)
@@ -137,13 +319,9 @@ contract("Moloch", async accounts => {
     assert.equal(balance.valueOf(), config.TOKEN_SUPPLY);
   });
 
+describe('submitProposal', () => {
   it("submit membership proposal happy case", async () => {
-    proposal1 = {
-      applicant: accounts[1],
-      tokenTribute: 100,
-      sharesRequested: 1,
-      details: "all hail moloch"
-    }
+
     await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })  /// just for testcase... send applicant token to use for tribute
     await token.approve(moloch.address, 10, { from: accounts[0] })   ///deposit
 
@@ -157,49 +335,94 @@ contract("Moloch", async accounts => {
        initialApplicantBalance: proposal1.tokenTribute,
        initialProposerBalance: balance
      })
+   })
   })
-/*
-  it("should call a function that depends on a linked library", async () => {
-    let meta = await MetaCoin.deployed();
-    let outCoinBalance = await meta.getBalance.call(accounts[0]);
-    let metaCoinBalance = outCoinBalance.toNumber();
-    let outCoinBalanceEth = await meta.getBalanceInEth.call(accounts[0]);
-    let metaCoinEthBalance = outCoinBalanceEth.toNumber();
-    assert.equal(metaCoinEthBalance, 2 * metaCoinBalance);
-  });
 
-  it("should send coin correctly", async () => {
-    // Get initial balances of first and second account.
-    let account_one = accounts[0];
-    let account_two = accounts[1];
 
-    let amount = 10;
+  describe('submitVote', () => {
+    beforeEach(async () => {
 
-    let instance = await MetaCoin.deployed();
-    let meta = instance;
+      await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+      await token.approve(moloch.address, 10, { from: accounts[0] })
+      await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
 
-    let balance = await meta.getBalance.call(account_one);
-    let account_one_starting_balance = balance.toNumber();
+      await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
+    })
 
-    balance = await meta.getBalance.call(account_two);
-    let account_two_starting_balance = balance.toNumber();
-    await meta.sendCoin(account_two, amount, { from: account_one });
+    it('happy case - yes vote', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(0, 1, { from: accounts[0] })
+      await verifySubmitVote(proposal1, 0, accounts[0], 1, {
+        expectedMaxSharesAtYesVote: 1
+      })
+    })
 
-    balance = await meta.getBalance.call(account_one);
-    let account_one_ending_balance = balance.toNumber();
+    it('happy case - no vote', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(0, 2, { from: accounts[0] })
+      await verifySubmitVote(proposal1, 0, accounts[0], 2, {})
+    })
 
-    balance = await meta.getBalance.call(account_two);
-    let account_two_ending_balance = balance.toNumber();
+    it('require fail - proposal does not exist', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(1, 1, { from:  accounts[0] }).should.be.rejectedWith('proposal does not exist')
+    })
 
-    assert.equal(
-      account_one_ending_balance,
-      account_one_starting_balance - amount,
-      "Amount wasn't correctly taken from the sender"
-    );
-    assert.equal(
-      account_two_ending_balance,
-      account_two_starting_balance + amount,
-      "Amount wasn't correctly sent to the receiver"
-    );
-  });*/
+    it('require fail - voting period has not started', async () => {
+      // don't move the period forward
+      await moloch.submitVote(0, 1, { from: accounts[0] }).should.be.rejectedWith('voting period has not started')
+    })
+
+})
+
+describe('processProposal', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })
+
+    await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] })
+
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+  })
+
+  it('happy case', async () => {
+    //const balance = await token.balanceOf(accounts[0]).toString(10);
+    //console.log(balance)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+    await verifyProcessProposal(proposal1, 0, accounts[0], accounts[9], {
+      initialTotalSharesRequested: 1,
+      initialTotalShares: 1,
+      initialMolochBalance: 110,
+      initialProposerBalance: 100 - config.PROPOSAL_DEPOSIT,
+      expectedYesVotes: 1,
+      expectedMaxSharesAtYesVote: 1
+    })
+  })
+
+  it('require fail - proposal does not exist', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(1).should.be.rejectedWith('proposal does not exist')
+  })
+
+  it('require fail - proposal is not ready to be processed', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS - 1)
+    await moloch.processProposal(0).should.be.rejectedWith('proposal is not ready to be processed')
+  })
+
+  it('require fail - proposal has already been processed', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+    await moloch.processProposal(0).should.be.rejectedWith('proposal has already been processed')
+  })
+})
+
+
+
+
+////////
 });
