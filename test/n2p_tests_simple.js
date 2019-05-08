@@ -226,9 +226,35 @@ contract("Moloch", async accounts => {
     assert.equal(proposerBalance, initialProposerBalance - config.PROPOSAL_DEPOSIT)
   }
 
+  const verifyDelegation = async (sender, sender_shares, delegate, delegate_delegated_shares, amount_of_shares) =>{
+    const _sender = sender;
+    const _sender_shares = sender_shares;
+    const _delegate = delegate;
+    const _delegate_delegated_shares = delegate_delegated_shares;
+    const _amount_of_shares = amount_of_shares;
+
+    const sender_memberData = await moloch.members(sender)
+
+    const sender_delegated_shares = await moloch.getSharesDelegated(delegate)
+
+    assert.equal(sender_memberData.exists, true) //checks if member is existing
+    assert.equal(sender_memberData.delegateKey, sender)   /// check if right adress
+    assert.equal(sender_memberData.shares, sender_shares - amount_of_shares)   /// check if shares are taken out of account
+    assert.equal(sender_delegated_shares, amount_of_shares) // need to check sharesDelegated
+
+    const delegate_memberData = await moloch.members(delegate)
+
+    assert.equal(delegate_memberData.exists, true) //checks if member is existing
+    //assert.equal(delegate_memberData.delegatekey, delegate) // checks if right address
+    assert.equal(delegate_memberData.delegatedShares, Number(delegate_delegated_shares) + Number(amount_of_shares)) //check if shares are delegated
+
+    assert.equal(Number(delegate_memberData.delegatedShares), Number(sender_delegated_shares)) /// this will fail if there are more than one delegate
+
+
+  }
+
 //// start here
   beforeEach(async() =>{
-
     snapshotId = await snapshot()
 
   })
@@ -420,6 +446,41 @@ describe('processProposal', () => {
     await moloch.processProposal(0).should.be.rejectedWith('proposal has already been processed')
   })
 })
+describe('delegateShares', () => {
+  before(async () => {
+    await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })
+
+    await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] })
+
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await verifySubmitVote(proposal1, 0, accounts[0], 1, {
+      expectedMaxSharesAtYesVote: 1
+    })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+    //await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+
+
+  })
+  it('happy case - delegation', async () => {
+    const sender_before = await moloch.members(accounts[0])
+    const delegate_before = await moloch.members(accounts[1])
+    await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
+    await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
+  })
+  it('require fail - more shares ask', async () => {
+    await moloch.delegateShares(accounts[1], 2, { from: accounts[0] }).should.be.rejectedWith('attempting to delegate more shares than you own')
+  })
+  it('require fail - zero adress', async () => {
+    const zeroAddress = '0x0000000000000000000000000000000000000000'
+    await moloch.delegateShares(zeroAddress, 2, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
+  })
+})
+
 
 
 

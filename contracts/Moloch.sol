@@ -63,7 +63,7 @@ contract Moloch {
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
         mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
     }
-    
+
 
     struct Proposal {
         address proposer; // the member who submitted the proposal
@@ -392,20 +392,22 @@ contract Moloch {
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
+        require(delegateTo != address(0), "Moloch(N2P)::delegateSharesl - delegate cannot be 0");
         require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
-        member.sharesDelegated[delegateTo].add(sharesToDelegate);
-        delegateMember.delegatedShares.add(sharesToDelegate);
-        member.shares.sub(sharesToDelegate);
+        member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
+        delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
+        member.shares = member.shares.sub(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 
     function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
+        require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
         require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
-        memberRetrieve.delegatedShares.sub(sharesToRetrieve);
-        member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
-        member.shares.add(sharesToRetrieve);
+        memberRetrieve.delegatedShares = memberRetrieve.delegatedShares.sub(sharesToRetrieve);
+        member.sharesDelegated[retrieveFrom] = member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
+        member.shares = member.shares.add(sharesToRetrieve);
         emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
     }
 
@@ -423,6 +425,11 @@ contract Moloch {
 
     function getProposalQueueLength() public view returns (uint256) {
         return proposalQueue.length;
+    }
+
+    function getSharesDelegated(address delegate) public view returns(uint256){
+      Member storage member = members[msg.sender];
+      return member.sharesDelegated[delegate];
     }
 
     // can only ragequit if the latest proposal you voted YES on has been processed
