@@ -392,7 +392,7 @@ contract Moloch {
     function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
-        require(delegateTo != address(0), "Moloch(N2P)::delegateSharesl - delegate cannot be 0");
+        require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
         require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
         member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
         delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);

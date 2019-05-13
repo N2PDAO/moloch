@@ -334,10 +334,10 @@ contract("Moloch", async accounts => {
     const tokenSupply = await token.totalSupply()
     assert.equal(+tokenSupply.toString(), config.TOKEN_SUPPLY)
     //// WHY?
-    // const summonerBalance = await token.balanceOf(summoner)
-    // assert.equal(+summonerBalance.toString(), SummonerBalance)
-    // const creatorBalance = await token.balanceOf(creator)
-    // assert.equal(creatorBalance, config.TOKEN_SUPPLY - initSummonerBalance)
+    const summonerBalance = await token.balanceOf(summoner)
+    assert.equal(+summonerBalance.toString(), SummonerBalance)
+    const creatorBalance = await token.balanceOf(creator)
+    assert.equal(creatorBalance, config.TOKEN_SUPPLY - initSummonerBalance)
   })
 
   it("check token balance of account one", async () => {
@@ -367,11 +367,9 @@ describe('submitProposal', () => {
 
   describe('submitVote', () => {
     beforeEach(async () => {
-
       await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
       await token.approve(moloch.address, 10, { from: accounts[0] })
       await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
-
       await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
     })
 
@@ -416,8 +414,8 @@ describe('processProposal', () => {
   })
 
   it('happy case', async () => {
-    //const balance = await token.balanceOf(accounts[0]).toString(10);
-    //console.log(balance)
+    const balance = await token.balanceOf(accounts[0]).toString(10);
+    console.log(balance)
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
     await moloch.processProposal(0, { from: accounts[9]})
     await verifyProcessProposal(proposal1, 0, accounts[0], accounts[9], {
@@ -446,6 +444,7 @@ describe('processProposal', () => {
     await moloch.processProposal(0).should.be.rejectedWith('proposal has already been processed')
   })
 })
+
 describe('delegateShares', () => {
   before(async () => {
     await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
@@ -462,23 +461,25 @@ describe('delegateShares', () => {
     await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
     await moloch.processProposal(0, { from: accounts[9]})
-    //await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-
-
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
   })
+
   it('happy case - delegation', async () => {
     const sender_before = await moloch.members(accounts[0])
     const delegate_before = await moloch.members(accounts[1])
     await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
     await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
   })
+
   it('require fail - more shares ask', async () => {
     await moloch.delegateShares(accounts[1], 2, { from: accounts[0] }).should.be.rejectedWith('attempting to delegate more shares than you own')
   })
+
   it('require fail - zero adress', async () => {
     const zeroAddress = '0x0000000000000000000000000000000000000000'
     await moloch.delegateShares(zeroAddress, 2, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
   })
+  
 })
 
 

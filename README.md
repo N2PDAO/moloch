@@ -66,7 +66,54 @@ NOT, IT IS YOUR RESPONSIBILITY TO ABORT THE PROPOSAL IMMEDIATELY.
 For more information about this, please see the documentation for the `abort`
 function below.
 
-## Data Structures
+## Additional Code For N2P DAO
+
+```
+    mapping (address => uint256) sharesDelegated; // the address of the member shares are delegated to & # of shares the member delegated to a certain adress
+```
+
+Addition to the `Member` data struct. Mapping of address of member who controls delegated shares & the number of shares. 
+
+```
+        function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
+        Member storage member = members[msg.sender];
+        Member storage delegateMember = members[delegateTo];
+        require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
+        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
+        member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
+        delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
+        member.shares = member.shares.sub(sharesToDelegate);
+        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
+    }
+```
+Function to delegate shares. Called by member who wishes to delegate. 
+1. `delegateTo`: address of member to delegate shares to. 
+2. `sharesToDelegate`: number of shares to delegate. Removed from sending member's `shares` key in struct and added to `sharesDelegated` mapping in recieving member's struct. 
+3. `delegateTo` cannot be a zero address. 
+4. `sharesToDelegate` must be > 0. 
+5. `sharesToDelegate` must be <= number of shares owned by the member delegating their shares. 
+6. Emits `SharesDelegated` event.  
+
+```
+    function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
+        Member storage member = members[msg.sender];
+        Member storage memberRetrieve = members[retrieveFrom];
+        require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
+        require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
+        memberRetrieve.delegatedShares = memberRetrieve.delegatedShares.sub(sharesToRetrieve);
+        member.sharesDelegated[retrieveFrom] = member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
+        member.shares = member.shares.add(sharesToRetrieve);
+        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
+    }
+```
+Function to retrieve shares that have been delegated. Called by member who wishes to retrieve their shares. 
+1. `retrieveFrom`: address of member to retrieve delegated shares from. 
+2. `sharesToRetrieve`: number of shares to retrieve. Removed from `sharesDelegated` mapping. 
+3. `retrieveFrom` cannot be a zero address. 
+4. `sharesToRetrieve` must be <= 0.
+5. Emits `SharesRetrieved` event. 
+
+## Data Structures 
 
 #### Global Constants
 ```
@@ -130,6 +177,7 @@ The `Member` struct stores all relevant data for each member, and is saved in th
         uint256 shares; // the # of shares assigned to this member
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
+        mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
     }
 
     mapping (address => Member) public members;
