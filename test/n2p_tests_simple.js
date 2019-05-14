@@ -245,7 +245,7 @@ contract("Moloch", async accounts => {
     const delegate_memberData = await moloch.members(delegate)
 
     assert.equal(delegate_memberData.exists, true) //checks if member is existing
-    //assert.equal(delegate_memberData.delegatekey, delegate) // checks if right address
+    assert.equal(delegate_memberData.delegatekey, delegate) // checks if right address
     assert.equal(delegate_memberData.delegatedShares, Number(delegate_delegated_shares) + Number(amount_of_shares)) //check if shares are delegated
 
     assert.equal(Number(delegate_memberData.delegatedShares), Number(sender_delegated_shares)) /// this will fail if there are more than one delegate
@@ -265,7 +265,7 @@ contract("Moloch", async accounts => {
     })
 
 
-  before("deploy contracts", async () => {
+  beforeEach("deploy contracts", async () => {
     moloch = await Moloch.deployed()
     const guildBankAddress = await moloch.guildBank()
     guildBank = await GuildBank.at(guildBankAddress)
@@ -280,7 +280,7 @@ contract("Moloch", async accounts => {
 
   })
   it('verify deployment parameters', async () => {
-    //const now = await blockTime() 
+    const now = await blockTime() 
 
     const approvedTokenAddress = await moloch.approvedToken()
     assert.equal(approvedTokenAddress, token.address)
@@ -446,7 +446,7 @@ describe('processProposal', () => {
 })
 
 describe('delegateShares', () => {
-  before(async () => {
+  beforeEach(async () => {
     await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
     await token.approve(moloch.address, 10, { from: accounts[0] })
     await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })
@@ -454,13 +454,13 @@ describe('delegateShares', () => {
     await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] })
 
     await moveForwardPeriods(1)
-    await moloch.submitVote(0, 1, { from: accounts[0] })
-    await verifySubmitVote(proposal1, 0, accounts[0], 1, {
-      expectedMaxSharesAtYesVote: 1
-    })
+    // await moloch.submitVote(0, 1, { from: accounts[0] })
+    // await verifySubmitVote(proposal1, 0, accounts[0], 1, {
+    //   expectedMaxSharesAtYesVote: 1
+    // })
     await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(0, { from: accounts[9]})
+    // await moloch.processProposal(0, { from: accounts[9]})
     await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
   })
 
@@ -478,6 +478,38 @@ describe('delegateShares', () => {
   it('require fail - zero adress', async () => {
     const zeroAddress = '0x0000000000000000000000000000000000000000'
     await moloch.delegateShares(zeroAddress, 2, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
+  })
+
+  it('member can vote with only delegated shares after ragequitting', async () => {
+    const sender_before = await moloch.members(accounts[0])
+    const delegate_before = await moloch.members(accounts[1])
+    await moloch.delegateShares(accounts[1], 10, { from: accounts[0] })
+    await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,10)
+    console.log(delegate_before.shares)
+    await moloch.ragequit(delegate_before.shares,{from:delegate_before})
+    expect(delegate_before.shares).to.equal(0)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await verifySubmitVote(proposal1, 0, accounts[0], 1, {
+      expectedMaxSharesAtYesVote: 1
+    })
+    // if fails doesnt work 
+    // check delegated shares has gone down 
+  })
+
+  it('member cannot delegate votes after ragequitting', async () => {
+    const sender_before = await moloch.members(accounts[0])
+    const delegate_before = await moloch.members(accounts[1])
+    await moloch.ragequit(delegate_before.shares,{from:delegate_before})
+    expect(delegate_before.shares).to.equal(0)
+    expect(moloch.delegateShares
+      (sender_before, 
+       10, 
+       {from: delegate_before}
+    )).to.be.rejected    
+  })
+
+  it('member can delegate to member who has ragequit', async () => {
+
   })
   
 })
