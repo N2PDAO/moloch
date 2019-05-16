@@ -238,7 +238,7 @@ contract Moloch {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes.add(member.shares);
+            proposal.noVotes = proposal.noVotes.add(member.shares + member.delegatedShares);
         }
 
         emit SubmitVote(proposalIndex, msg.sender, memberAddress, uintVote);
