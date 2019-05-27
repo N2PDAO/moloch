@@ -61,7 +61,10 @@ contract Moloch {
         uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
+
         mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
+        mapping (address => uint256) arrayPointer;    // the Pointer at what position the adress of this member is stored in the array of the delegated
+        address[] addressDelegatedTo;  // the adreses of member which delegated to this member
     }
 
 
@@ -138,7 +141,7 @@ contract Moloch {
 
         summoningTime = now;
 
-        members[summoner] = Member(summoner, 1, 0, true, 0);
+        members[summoner] = Member(summoner, 1, 0, true, 0, new address[](0));
         memberAddressByDelegateKey[summoner] = summoner;
         totalShares = 1;
 
@@ -281,7 +284,7 @@ contract Moloch {
                 }
 
                 // use applicant address as delegateKey by default
-                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, 0, true, 0);
+                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, 0, true, 0,new address[](0));
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
             }
 
@@ -389,22 +392,43 @@ contract Moloch {
     SHARE DELEGATION FUNCTIONS
     **************************/
 
-    function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
+    function delegateShares(address delegateTo) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
+        uint256 sharesToDelegate = member.shares.sub(1);
         require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
-        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
+        require(sharesToDelegate>0, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
+
+
         member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
+        delegateMember.addressDelegatedTo.push(msg.sender);
+        member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;
         delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
         member.shares = member.shares.sub(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 
-    function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
+    function retrieveShares(address retrieveFrom) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
+        uint256 sharesToRetrieve = member.sharesDelegated[retrieveFrom];
         require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
-        require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
+
+        uint256 lenghts = memberRetrieve.addressDelegatedTo.length.sub(1);
+        uint256 array_pointer = member.arrayPointer[retrieveFrom];
+
+        //cleaning the array
+        if (array_pointer < lenghts) {     //// if the Pointer stored in the member, which delegates is smaller than the length-1 of the array stored in the delegate do
+          Member storage member_index_change = members[memberRetrieve.addressDelegatedTo[lenghts]];               /// creating a mem struct in memory of the member which needs to change index
+          memberRetrieve.addressDelegatedTo[array_pointer] = memberRetrieve.addressDelegatedTo[lenghts];   ///need to change index
+          member_index_change.arrayPointer[retrieveFrom] = array_pointer;
+        }
+        // we can now reduce the array length by 1
+        //members[retrieveFrom].addressDelegatedTo--;
+        members[retrieveFrom].addressDelegatedTo.length = members[retrieveFrom].addressDelegatedTo.length.sub(1);
+
+
+        //require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
         memberRetrieve.delegatedShares = memberRetrieve.delegatedShares.sub(sharesToRetrieve);
         member.sharesDelegated[retrieveFrom] = member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
         member.shares = member.shares.add(sharesToRetrieve);
