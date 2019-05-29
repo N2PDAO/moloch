@@ -392,7 +392,7 @@ contract Moloch {
     SHARE DELEGATION FUNCTIONS
     **************************/
 
-    function delegateShares(address delegateTo) public onlyDelegate {
+    function delegateShares(address delegateTo) public {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
         uint256 sharesToDelegate = member.shares.sub(1);
@@ -402,26 +402,30 @@ contract Moloch {
 
         member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
         delegateMember.addressDelegatedTo.push(msg.sender);
-        member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;
+        member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;    ///.sub(1)
         delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
         member.shares = member.shares.sub(sharesToDelegate);
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 
-    function retrieveShares(address retrieveFrom) public onlyDelegate {
+    function retrieveShares(address retrieveFrom) public {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
         uint256 sharesToRetrieve = member.sharesDelegated[retrieveFrom];
         require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
 
-        uint256 lenghts = memberRetrieve.addressDelegatedTo.length.sub(1);
+        uint256 last_member_pointer = memberRetrieve.addressDelegatedTo.length.sub(1);
+        uint256 length_array = memberRetrieve.addressDelegatedTo.length;
         uint256 array_pointer = member.arrayPointer[retrieveFrom];
+        address adress_index_change = memberRetrieve.addressDelegatedTo[last_member_pointer];
 
         //cleaning the array
-        if (array_pointer < lenghts) {     //// if the Pointer stored in the member, which delegates is smaller than the length-1 of the array stored in the delegate do
-          Member storage member_index_change = members[memberRetrieve.addressDelegatedTo[lenghts]];               /// creating a mem struct in memory of the member which needs to change index
-          memberRetrieve.addressDelegatedTo[array_pointer] = memberRetrieve.addressDelegatedTo[lenghts];   ///need to change index
-          member_index_change.arrayPointer[retrieveFrom] = array_pointer;
+        if (array_pointer <  length_array ) {     //// if the Pointer stored in the member, which delegates is smaller than the length of the array stored in the delegate do
+
+          memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] = memberRetrieve.addressDelegatedTo[last_member_pointer];   ///need to change index
+
+          Member storage member_index_change = members[adress_index_change];               /// creating a mem struct in memory of the member which needs to change index
+          member_index_change.arrayPointer[retrieveFrom] = array_pointer;                   ///need .add(1)
         }
         // we can now reduce the array length by 1
         //members[retrieveFrom].addressDelegatedTo--;
