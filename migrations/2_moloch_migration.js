@@ -23,7 +23,7 @@ module.exports = (deployer, network, accounts) => {
       config.PROPOSAL_DEPOSIT,
       config.DILUTION_BOUND,
       config.PROCESSING_REWARD,
-      { gas: 7000000 }
+      { gas: 7500000 }
     )
   })
 }

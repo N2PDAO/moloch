@@ -40,8 +40,8 @@ contract Moloch {
     event Abort(uint256 indexed proposalIndex, address applicantAddress);
     event UpdateDelegateKey(address indexed memberAddress, address newDelegateKey);
     event SummonComplete(address indexed summoner, uint256 shares);
-    event SharesDelegated(address indexed from, address indexed to, uint256 amount);
-    event SharesRetrieved(address indexed from, address indexed to, uint256 amount);
+    event SharesDelegated(address indexed from, address indexed to);
+    event SharesRetrieved(address indexed from, address indexed to);
 
     /******************
     INTERNAL ACCOUNTING
@@ -58,13 +58,12 @@ contract Moloch {
     struct Member {
         address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
         uint256 shares; // the # of shares assigned to this member
-        uint256 delegatedShares; // the # of shares delegated to this member by other members of the DAO
         bool exists; // always true once a member has been created
         uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
 
-        mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
         mapping (address => uint256) arrayPointer;    // the Pointer at what position the adress of this member is stored in the array of the delegated
         address[] addressDelegatedTo;  // the adreses of member which delegated to this member
+        bool delegated;
     }
 
 
@@ -141,7 +140,7 @@ contract Moloch {
 
         summoningTime = now;
 
-        members[summoner] = Member(summoner, 1, 0, true, 0, new address[](0));
+        members[summoner] = Member(summoner, 1, true, 0, new address[](0),false);
         memberAddressByDelegateKey[summoner] = summoner;
         totalShares = 1;
 
@@ -223,12 +222,27 @@ contract Moloch {
         require(vote == Vote.Yes || vote == Vote.No, "Moloch::submitVote - vote must be either Yes or No");
         require(!proposal.aborted, "Moloch::submitVote - proposal has been aborted");
 
+        require(member.delegated == false , "Moloch::member has shares delegated");
+
         // store vote
         proposal.votesByMember[memberAddress] = vote;
 
+        uint256 delegatedShares;
+
+        for (uint i=0; i< member.addressDelegatedTo.length; i++) {
+            address voted = member.addressDelegatedTo[i];
+
+            if (proposal.votesByMember[voted] == Vote.Null){
+
+                uint256 memberdelegatedShares = members[memberAddress].shares;
+                proposal.votesByMember[voted] = vote;
+                delegatedShares = delegatedShares.add(memberdelegatedShares);
+            }
+        }
+
         // count vote
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes.add(member.shares + member.delegatedShares);
+            proposal.yesVotes = proposal.yesVotes.add(member.shares + delegatedShares);
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
@@ -241,7 +255,7 @@ contract Moloch {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes.add(member.shares + member.delegatedShares);
+            proposal.noVotes = proposal.noVotes.add(member.shares + delegatedShares);
         }
 
         emit SubmitVote(proposalIndex, msg.sender, memberAddress, uintVote);
@@ -284,7 +298,7 @@ contract Moloch {
                 }
 
                 // use applicant address as delegateKey by default
-                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, 0, true, 0,new address[](0));
+                members[proposal.applicant] = Member(proposal.applicant, proposal.sharesRequested, true, 0,new address[](0), false);
                 memberAddressByDelegateKey[proposal.applicant] = proposal.applicant;
             }
 
@@ -336,6 +350,8 @@ contract Moloch {
         require(member.shares >= sharesToBurn, "Moloch::ragequit - insufficient shares");
 
         require(canRagequit(member.highestIndexYesVote), "Moloch::ragequit - cant ragequit until highest index proposal member voted YES on is processed");
+
+        require(member.delegated == false , "Moloch::member has shares delegated");
 
         // burn shares
         member.shares = member.shares.sub(sharesToBurn);
@@ -392,31 +408,31 @@ contract Moloch {
     SHARE DELEGATION FUNCTIONS
     **************************/
 
-    function delegateShares(address delegateTo) public {
+    function delegateShares(address delegateTo) public onlyMember {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
-        uint256 sharesToDelegate = member.shares.sub(1);
         require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
-        require(sharesToDelegate>0, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
+        require(member.delegated == false, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated");
+        require(delegateMember.exists == true, "Moloch(N2P)::delegateShares - attempting to delegate shares to nonmember");
 
-
-        member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
         delegateMember.addressDelegatedTo.push(msg.sender);
         member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;    ///.sub(1)
-        delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
-        member.shares = member.shares.sub(sharesToDelegate);
-        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
+        member.delegated = true;
+
+       emit SharesDelegated(msg.sender, delegateTo);
     }
 
-    function retrieveShares(address retrieveFrom) public {
+    function retrieveShares(address retrieveFrom) public onlyMember {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
-        uint256 sharesToRetrieve = member.sharesDelegated[retrieveFrom];
+        uint256 array_pointer = member.arrayPointer[retrieveFrom];
+
         require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
+        require(member.delegated == true, "Moloch(N2P)::delegateShares - invalid trial attempting to retrive shares");
+        require(memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] == msg.sender, "Moloch(N2P)::delegateShares - invalid trial attempting to retrive not owned shares" );
 
         uint256 last_member_pointer = memberRetrieve.addressDelegatedTo.length.sub(1);
         uint256 length_array = memberRetrieve.addressDelegatedTo.length;
-        uint256 array_pointer = member.arrayPointer[retrieveFrom];
         address adress_index_change = memberRetrieve.addressDelegatedTo[last_member_pointer];
 
         //cleaning the array
@@ -425,23 +441,29 @@ contract Moloch {
           memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] = memberRetrieve.addressDelegatedTo[last_member_pointer];   ///need to change index
 
           Member storage member_index_change = members[adress_index_change];               /// creating a mem struct in memory of the member which needs to change index
-          member_index_change.arrayPointer[retrieveFrom] = array_pointer;                   ///need .add(1)
+          member_index_change.arrayPointer[retrieveFrom] = array_pointer;
         }
         // we can now reduce the array length by 1
-        //members[retrieveFrom].addressDelegatedTo--;
         members[retrieveFrom].addressDelegatedTo.length = members[retrieveFrom].addressDelegatedTo.length.sub(1);
 
 
         //require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
-        memberRetrieve.delegatedShares = memberRetrieve.delegatedShares.sub(sharesToRetrieve);
-        member.sharesDelegated[retrieveFrom] = member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
-        member.shares = member.shares.add(sharesToRetrieve);
-        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
+        member.delegated = false;
+       // emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
     }
 
     /***************
     GETTER FUNCTIONS
     ***************/
+    function getArrayPointer(address delegate, address member)public view returns(uint256){
+        return  members[member].arrayPointer[delegate];
+    }
+
+
+    function getArray(address delegate)public view returns(address[] memory){
+        Member memory member = members[delegate];
+        return  member.addressDelegatedTo;
+    }
 
     function max(uint256 x, uint256 y) internal pure returns (uint256) {
         return x >= y ? x : y;
@@ -456,8 +478,16 @@ contract Moloch {
     }
 
     function getSharesDelegated(address delegate) public view returns(uint256){
-      Member storage member = members[msg.sender];
-      return member.sharesDelegated[delegate];
+        Member storage member = members[delegate];
+        uint256 delegatedShares;
+
+        for (uint i=0; i< member.addressDelegatedTo.length; i++) {
+            address delegator = member.addressDelegatedTo[i];
+            uint256 memberdelegatedShares = members[delegator].shares;
+            delegatedShares = delegatedShares.add(memberdelegatedShares);
+        }
+
+        return delegatedShares;
     }
 
     // can only ragequit if the latest proposal you voted YES on has been processed

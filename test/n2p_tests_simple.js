@@ -226,33 +226,46 @@ contract("Moloch", async accounts => {
     assert.equal(proposerBalance, initialProposerBalance - config.PROPOSAL_DEPOSIT)
   }
 
-  const verifyDelegation = async (sender, sender_shares, delegate, delegate_delegated_shares, amount_of_shares) =>{
-    const _sender = sender;
-    const _sender_shares = sender_shares;
-    const _delegate = delegate;
-    const _delegate_delegated_shares = delegate_delegated_shares;
-    const _amount_of_shares = amount_of_shares;
+  const verifyDelegation = async (sender, sender_before, delegate, delegate_before, amount_of_shares) =>{
 
-    const sender_memberData = await moloch.members(sender)
+    const sender_memberData = await moloch.members(sender);
+    const delegate_array = await moloch.getArray(delegate);
+    const array_pointer = await moloch.getArrayPointer(delegate,sender);
 
     const sender_delegated_shares = await moloch.getSharesDelegated(delegate)
-    console.log(sender_delegated_shares)
-
-    assert.equal(sender_memberData.exists, true) //checks if member is existing
-    assert.equal(sender_memberData.delegateKey, sender)   /// check if right adress
-    assert.equal(sender_memberData.shares, sender_shares - amount_of_shares)   /// check if shares are taken out of account
-    assert.equal(sender_delegated_shares, amount_of_shares) // need to check sharesDelegated
-
     const delegate_memberData = await moloch.members(delegate)
 
     assert.equal(delegate_memberData.exists, true) //checks if member is existing
-    //assert.equal(delegate_memberData.delegatekey, delegate) // checks if right address
-    assert.equal(delegate_memberData.delegatedShares, Number(delegate_delegated_shares) + Number(amount_of_shares)) //check if shares are delegated
+    assert.equal(sender_memberData.exists, true) //checks if member is existing
+    assert.equal(sender_memberData.delegateKey, sender)   /// check if right adress
+    assert.equal(sender_delegated_shares, amount_of_shares) // need to check sharesDelegated
+    assert.equal(sender_before.delegated, false) // checks if bool is set
+    assert.equal(sender_memberData.delegated, true) // checks if bool is set
+    assert.equal(array_pointer, 1) /// checks if array pointer is set
 
-    assert.equal(Number(delegate_memberData.delegatedShares), Number(sender_delegated_shares)) /// this will fail if there are more than one delegate
+    assert.equal(delegate_array[0], sender) // checks if sender is put in array
+  }
+  //// Verification of RetrieveShares
+const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_before, amount_of_shares) =>{
 
+    const sender_memberData = await moloch.members(sender);
+    const delegate_array = await moloch.getArray(delegate);
+    const array_pointer = await moloch.getArrayPointer(delegate,sender);
+
+    const sender_delegated_shares = await moloch.getSharesDelegated(delegate)
+    const delegate_memberData = await moloch.members(delegate)
+
+    assert.equal(delegate_memberData.exists, true) //checks if member is existing
+    assert.equal(sender_memberData.exists, true) //checks if member is existing
+    assert.equal(sender_memberData.delegateKey, sender)   /// check if right adress
+    assert.equal(sender_delegated_shares, 0) // need to check sharesDelegated
+    assert.equal(sender_before.delegated, true) // checks if bool is set
+    assert.equal(sender_memberData.delegated, false) // checks if bool is set
+
+    assert.equal(delegate_array[0], undefined) // checks if sender is put in array
 
   }
+
 
 //// start here
   beforeEach(async() =>{
@@ -374,152 +387,155 @@ describe('submitProposal', () => {
   })
 
 
-//   describe('submitVote', () => {
-//     beforeEach(async () => {
-//       await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
-//       await token.approve(moloch.address, 10, { from: accounts[0] })
-//       await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
-//       await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
-//     })
-//
-//     it('happy case - yes vote', async () => {
-//       await moveForwardPeriods(1)
-//       await moloch.submitVote(0, 1, { from: accounts[0] })
-//       await verifySubmitVote(proposal1, 0, accounts[0], 1, {
-//         expectedMaxSharesAtYesVote: 1
-//       })
-//     })
-//
-//     it('happy case - no vote', async () => {
-//       await moveForwardPeriods(1)
-//       await moloch.submitVote(0, 2, { from: accounts[0] })
-//       await verifySubmitVote(proposal1, 0, accounts[0], 2, {})
-//     })
-//
-//     it('require fail - proposal does not exist', async () => {
-//       await moveForwardPeriods(1)
-//       await moloch.submitVote(1, 1, { from:  accounts[0] }).should.be.rejectedWith('proposal does not exist')
-//     })
-//
-//     it('require fail - voting period has not started', async () => {
-//       // don't move the period forward
-//       await moloch.submitVote(0, 1, { from: accounts[0] }).should.be.rejectedWith('voting period has not started')
-//     })
-//
-// })
+  describe('submitVote', () => {
+    beforeEach(async () => {
+      await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+      await token.approve(moloch.address, 10, { from: accounts[0] })
+      await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
+      await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
+    })
 
-// describe('processProposal', () => {
-//   beforeEach(async () => {
-//     await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
-//     await token.approve(moloch.address, 10, { from: accounts[0] })
-//     await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })
-//
-//     await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] })
-//
-//     await moveForwardPeriods(1)
-//     await moloch.submitVote(0, 1, { from: accounts[0] })
-//
-//     await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-//   })
-//
-//   it('happy case', async () => {
-//     const balance = await token.balanceOf(accounts[0]).toString(10);
-//     console.log(balance)
-//     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-//     await moloch.processProposal(0, { from: accounts[9]})
-//     await verifyProcessProposal(proposal1, 0, accounts[0], accounts[9], {
-//       initialTotalSharesRequested: 1,
-//       initialTotalShares: 1,
-//       initialMolochBalance: 110,
-//       initialProposerBalance: 100 - config.PROPOSAL_DEPOSIT,
-//       expectedYesVotes: 1,
-//       expectedMaxSharesAtYesVote: 1
-//     })
-//   })
-//
-//   it('require fail - proposal does not exist', async () => {
-//     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-//     await moloch.processProposal(1).should.be.rejectedWith('proposal does not exist')
-//   })
-//
-//   it('require fail - proposal is not ready to be processed', async () => {
-//     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS - 1)
-//     await moloch.processProposal(0).should.be.rejectedWith('proposal is not ready to be processed')
-//   })
-//
-//   it('require fail - proposal has already been processed', async () => {
-//     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-//     await moloch.processProposal(0, { from: accounts[9]})
-//     await moloch.processProposal(0).should.be.rejectedWith('proposal has already been processed')
-//   })
-// })
-//
-// describe('delegateShares', () => {
-//   beforeEach(async () => {
-//     await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
-//     await token.approve(moloch.address, 10, { from: accounts[0] })
-//     await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
-//
-//     await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
-//
-//     await moveForwardPeriods(1)
-//     await moloch.submitVote(0, 1, { from: accounts[0] })
-//     // await verifySubmitVote(proposal1, 0, accounts[0], 1, {
-//     //   expectedMaxSharesAtYesVote: 1
-//     // })
-//     await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-//     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-//     await moloch.processProposal(0, { from: accounts[9]})
-//     //await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-//   })
-//
-//   it('happy case - delegation', async () => {
-//     const sender_before = await moloch.members(accounts[1])
-//     const delegate_before = await moloch.members(accounts[0])
-//     console.log(Number(sender_before.shares))
-//     console.log(Number(delegate_before.shares))
-//     await moloch.delegateShares(accounts[0], 1, { from: accounts[1] })
-//     await verifyDelegation(accounts[1],sender_before.shares,accounts[0],delegate_before.delegatedShares,1)
-//   })
+    it('happy case - yes vote', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(0, 1, { from: accounts[0] })
+      await verifySubmitVote(proposal1, 0, accounts[0], 1, {
+        expectedMaxSharesAtYesVote: 1
+      })
+    })
 
-//   it('require fail - more shares ask', async () => {
-//     await moloch.delegateShares(accounts[1], 2, { from: accounts[0] }).should.be.rejectedWith('attempting to delegate more shares than you own')
-//   })
+    it('happy case - no vote', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(0, 2, { from: accounts[0] })
+      await verifySubmitVote(proposal1, 0, accounts[0], 2, {})
+    })
+
+    it('require fail - proposal does not exist', async () => {
+      await moveForwardPeriods(1)
+      await moloch.submitVote(1, 1, { from:  accounts[0] }).should.be.rejectedWith('proposal does not exist')
+    })
+
+    it('require fail - voting period has not started', async () => {
+      // don't move the period forward
+      await moloch.submitVote(0, 1, { from: accounts[0] }).should.be.rejectedWith('voting period has not started')
+    })
+
+})
+
+describe('processProposal', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })
+
+    await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] })
+
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+  })
+
+  it('happy case', async () => {
+    const balance = await token.balanceOf(accounts[0]).toString(10);
+    console.log(balance)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+    await verifyProcessProposal(proposal1, 0, accounts[0], accounts[9], {
+      initialTotalSharesRequested: 1,
+      initialTotalShares: 1,
+      initialMolochBalance: 110,
+      initialProposerBalance: 100 - config.PROPOSAL_DEPOSIT,
+      expectedYesVotes: 1,
+      expectedMaxSharesAtYesVote: 1
+    })
+  })
+
+  it('require fail - proposal does not exist', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(1).should.be.rejectedWith('proposal does not exist')
+  })
+
+  it('require fail - proposal is not ready to be processed', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS - 1)
+    await moloch.processProposal(0).should.be.rejectedWith('proposal is not ready to be processed')
+  })
+
+  it('require fail - proposal has already been processed', async () => {
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+    await moloch.processProposal(0).should.be.rejectedWith('proposal has already been processed')
+  })
+})
 //
-//   it('require fail - zero adress', async () => {
-//     const zeroAddress = '0x0000000000000000000000000000000000000000'
-//     await moloch.delegateShares(zeroAddress, 2, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
-//   })
-//
-//
-//   it('happy case - member can ragequit while having delegated shares', async () => {
-//     const sender_before = await moloch.members(accounts[0])
-//     const delegate_before = await moloch.members(accounts[1])
-//     await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
-//     await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
-//     await moloch.ragequit(1,{from: accounts[1]})
-//   })
-//
-//
-// it('require fail - member cant ragequit the delegated shares', async () => {
-//   const sender_before = await moloch.members(accounts[0])
-//   const delegate_before = await moloch.members(accounts[1])
-//   await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
-//   await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
-//   await moloch.ragequit(2,{from: accounts[1]}).should.be.rejectedWith('insufficient shares')
-// })
-//
-//   it('require fail - member cant submit proposals after ragequitting while having delegated shares', async () => {
-//     const sender_before = await moloch.members(accounts[0])
-//     const delegate_before = await moloch.members(accounts[1])
-//     await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
-//     await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
-//     // console.log(delegate_before.shares)
-//     await moloch.ragequit(1,{from: accounts[1]})
-//
-//     await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from: accounts[0] }).should.be.rejectedWith('onlyDelegate - not a delegate')
-//
-// })
+describe('delegateShares', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
+
+    await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
+
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+  })
+
+  it('happy case - delegation', async () => {
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
+  })
+
+  it('require fail - delegate without retrive', async () => {
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1],sender_before,accounts[0],delegate_before,8)
+    await moloch.delegateShares(accounts[2], { from: accounts[1] }).should.be.rejectedWith('attempting to delegate shares while other shares are delegated')
+  })
+
+  it('require fail - zero adress', async () => {
+    const zeroAddress = '0x0000000000000000000000000000000000000000'
+    await moloch.delegateShares(zeroAddress, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
+  })
+
+  it('require fail - attempting delegation without being member', async () => {
+    await moloch.delegateShares(accounts[0], { from: accounts[4] }).should.be.rejectedWith('onlyMember - not a member')
+  })
+
+  it('require fail - delegate shares to nonmember', async () => {
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[4], { from: accounts[1] }).should.be.rejectedWith('attempting to delegate shares to nonmember')
+  })
+
+  //
+  it('edge case - member can completly ragequit own shares while having delegated shares', async () => {
+    const sender_before = await moloch.members(accounts[0])
+    const delegate_before = await moloch.members(accounts[1])
+    await moloch.delegateShares(accounts[1], { from: accounts[0] })
+    await moloch.ragequit(1,{from: accounts[1]})
+  })
+
+  it('require fail - delegation after ragequitting', async () => {
+    const sender_before = await moloch.members(accounts[0])
+    const delegate_before = await moloch.members(accounts[1])
+    await moloch.ragequit(8,{from: accounts[1]})
+    await moloch.delegateShares(accounts[0], { from: accounts[1] }).should.be.rejectedWith('onlyMember - not a member')
+  })
+
+it('require fail - trying to ragequit the delegated shares', async () => {
+  const sender_before = await moloch.members(accounts[0])
+  const delegate_before = await moloch.members(accounts[1])
+  await moloch.delegateShares(accounts[1], { from: accounts[0] })
+  await verifyDelegation(accounts[0],sender_before,accounts[1],delegate_before,1)
+  await moloch.ragequit(9,{from: accounts[1]}).should.be.rejectedWith('insufficient shares')
+})
+
+
 //
 // it('happy case - retriving delegated shares back from a member who ragequited', async () => {
 //   const sender_before = await moloch.members(accounts[0])
@@ -530,49 +546,104 @@ describe('submitProposal', () => {
 //   await moloch.retrieveShares(accounts[1],1,{from: accounts[0]})
 // })
 
+})
 
-   //// from here submiting proposal
-   ///account0 has 0 shares (1 delegated)
-   ///account 1 has 2 shares (1 is delegated)
-   /// account 1 rangequited with 1 shares (so has only 1 delegated left)
-   // account 0 makes an proposal
+describe('retrieveShares', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
+    await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
 
-   //await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[1] })  /// just for testcase... send applicant token to use for tribute
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1],sender_before ,accounts[0],delegate_before,8)
 
-   //await token.approve(moloch.address, 10, { from: accounts[1] })   ///deposit
+  })
 
-   /////await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant }) /// prepare the tribute from applicant
+  it('happy case - retrieveShares', async () => {
+    const sender_before_retrieve = await moloch.members(accounts[1])
+    const delegate_before_retrieve = await moloch.members(accounts[0])
+    await moloch.retrieveShares(accounts[0], { from: accounts[1] })
+    await verifyRetrieveShares(accounts[1],sender_before_retrieve,accounts[0],delegate_before_retrieve,8)
+  })
 
-   //let balance = await token.balanceOf(accounts[0]);
+  it('require fail - zero adress', async () => {
+    const zeroAddress = '0x0000000000000000000000000000000000000000'
+    await moloch.retrieveShares(zeroAddress, { from: accounts[0] }).should.be.rejectedWith('delegate cannot be 0')
+  })
 
-    // expect(delegate_before.shares).to.equal(0)
-    // await moloch.submitVote(0, 1, { from: accounts[0] })
-    // await verifySubmitVote(proposal1, 0, accounts[0], 1, {
-    //   expectedMaxSharesAtYesVote: 1
-    // })
-    // if fails doesnt work
-    // check delegated shares has gone down
+  it('edge case - retriving shares from ragequit member', async () => {
+    const sender_before_retrieve = await moloch.members(accounts[1])
+    const delegate_before_retrieve = await moloch.members(accounts[0])
+    await moloch.ragequit(1,{from: accounts[0]})
+    await moloch.retrieveShares(accounts[0], { from: accounts[1] })
+    await verifyRetrieveShares(accounts[1],sender_before_retrieve,accounts[0],delegate_before_retrieve,8)
+  })
 
-  ////member can vote with only delegated shares after ragequitting / missing
+  it('require fail - attempting to retrive not owned shares', async () => {
+    const sender_before_retrieve = await moloch.members(accounts[1])
+    const delegate_before_retrieve = await moloch.members(accounts[0])
+  //  await moloch.retrieveShares(accounts[0], { from: accounts[1] })
+    await moloch.retrieveShares(accounts[4] , { from: accounts[1] }).should.be.rejectedWith(SolRevert)
+  })
 
-  // it('member cannot delegate votes after ragequitting', async () => {
-  //   const sender_before = await moloch.members(accounts[0])
-  //   const delegate_before = await moloch.members(accounts[1])
-  //   await moloch.ragequit(delegate_before.shares,{from:delegate_before})
-  //   expect(delegate_before.shares).to.equal(0)
-  //   expect(moloch.delegateShares
-  //     (sender_before,
-  //      10,
-  //      {from: delegate_before}
-  //   )).to.be.rejected
-  // })
-  //
-  // it('member can delegate to member who has ragequit', async () => {
-  //
-  // })
+  it('require fail - trying to ragequit with shares delegated', async () => {
+    const sender_before_retrieve = await moloch.members(accounts[1])
+    const delegate_before_retrieve = await moloch.members(accounts[0])
+    await moloch.ragequit(1,{from: accounts[1]}).should.be.rejectedWith('member has shares delegated')
+  })
 
-//})
+  it('require fail - trying to retrive shares which are not delegated', async () => {
+    const sender_before_retrieve = await moloch.members(accounts[1])
+    const delegate_before_retrieve = await moloch.members(accounts[0])
+    await moloch.retrieveShares(accounts[0], { from: accounts[1] })
+    await moloch.retrieveShares(accounts[0], { from: accounts[1] }).should.be.rejectedWith('invalid trial attempting to retrive shares')
+  })
 
+})
+
+describe('delegateVote', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
+    await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1],sender_before ,accounts[0],delegate_before,8)
+
+    await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
+
+  })
+
+  it('happy case - vote with delegated shares', async () => {
+    await moveForwardPeriods(1)
+    await moloch.submitVote(1, 1, { from: accounts[0] })
+  })
+
+  it('require fail - trying to vote when shares are delegated', async () => {
+    await moveForwardPeriods(1)
+    await moloch.submitVote(1, 1, { from: accounts[1] }).should.be.rejectedWith('Moloch::member has shares delegated')
+  })
+
+})
 
 
 
