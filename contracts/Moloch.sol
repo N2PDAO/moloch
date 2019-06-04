@@ -227,22 +227,24 @@ contract Moloch {
         // store vote
         proposal.votesByMember[memberAddress] = vote;
 
-        uint256 delegatedShares;
+        uint256 finalShares;
 
         for (uint i=0; i< member.addressDelegatedTo.length; i++) {
             address voted = member.addressDelegatedTo[i];
 
             if (proposal.votesByMember[voted] == Vote.Null){
 
-                uint256 memberdelegatedShares = members[memberAddress].shares;
+                uint256 memberdelegatedShares = members[voted].shares;
                 proposal.votesByMember[voted] = vote;
-                delegatedShares = delegatedShares.add(memberdelegatedShares);
+                finalShares = finalShares.add(memberdelegatedShares);
             }
         }
 
         // count vote
+        finalShares = finalShares.add(member.shares);
         if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes.add(member.shares + delegatedShares);
+
+            proposal.yesVotes = proposal.yesVotes.add(finalShares);
 
             // set highest index (latest) yes vote - must be processed for member to ragequit
             if (proposalIndex > member.highestIndexYesVote) {
@@ -255,7 +257,7 @@ contract Moloch {
             }
 
         } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes.add(member.shares + delegatedShares);
+            proposal.noVotes = proposal.noVotes.add(finalShares);
         }
 
         emit SubmitVote(proposalIndex, msg.sender, memberAddress, uintVote);
@@ -408,21 +410,22 @@ contract Moloch {
     SHARE DELEGATION FUNCTIONS
     **************************/
 
-    function delegateShares(address delegateTo) public onlyMember {
+    function delegateShares(address delegateTo) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
         require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
         require(member.delegated == false, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated");
+        require(member.addressDelegatedTo.length == 0, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated to sender");   //testcase to catch this
         require(delegateMember.exists == true, "Moloch(N2P)::delegateShares - attempting to delegate shares to nonmember");
 
         delegateMember.addressDelegatedTo.push(msg.sender);
-        member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;    ///.sub(1)
+        member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;
         member.delegated = true;
 
        emit SharesDelegated(msg.sender, delegateTo);
     }
 
-    function retrieveShares(address retrieveFrom) public onlyMember {
+    function retrieveShares(address retrieveFrom) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage memberRetrieve = members[retrieveFrom];
         uint256 array_pointer = member.arrayPointer[retrieveFrom];
