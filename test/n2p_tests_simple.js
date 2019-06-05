@@ -355,11 +355,7 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
     // confirm initial token supply and summoner balance
     const tokenSupply = await token.totalSupply()
     assert.equal(+tokenSupply.toString(), config.TOKEN_SUPPLY)
-    //// WHY?
-    // const summonerBalance = await token.balanceOf(summoner)
-    // assert.equal(+summonerBalance.toString(), SummonerBalance)
-    // const creatorBalance = await token.balanceOf(creator)
-    // assert.equal(creatorBalance, config.TOKEN_SUPPLY - initSummonerBalance)
+
   })
 
   it("check token balance of account one", async () => {
@@ -535,17 +531,6 @@ it('require fail - trying to ragequit the delegated shares', async () => {
   await moloch.ragequit(9,{from: accounts[1]}).should.be.rejectedWith('insufficient shares')
 })
 
-
-//
-// it('happy case - retriving delegated shares back from a member who ragequited', async () => {
-//   const sender_before = await moloch.members(accounts[0])
-//   const delegate_before = await moloch.members(accounts[1])
-//   await moloch.delegateShares(accounts[1], 1, { from: accounts[0] })
-//   await verifyDelegation(accounts[0],sender_before.shares,accounts[1],delegate_before.delegatedShares,1)
-//   await moloch.ragequit(1,{from: accounts[1]})
-//   await moloch.retrieveShares(accounts[1],1,{from: accounts[0]})
-// })
-
 })
 
 describe('retrieveShares', () => {
@@ -590,7 +575,6 @@ describe('retrieveShares', () => {
   it('require fail - attempting to retrive not owned shares', async () => {
     const sender_before_retrieve = await moloch.members(accounts[1])
     const delegate_before_retrieve = await moloch.members(accounts[0])
-  //  await moloch.retrieveShares(accounts[0], { from: accounts[1] })
     await moloch.retrieveShares(accounts[4] , { from: accounts[1] }).should.be.rejectedWith(SolRevert)
   })
 

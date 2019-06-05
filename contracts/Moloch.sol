@@ -439,11 +439,11 @@ contract Moloch {
         address adress_index_change = memberRetrieve.addressDelegatedTo[last_member_pointer];
 
         //cleaning the array
-        if (array_pointer <  length_array ) {     //// if the Pointer stored in the member, which delegates is smaller than the length of the array stored in the delegate do
+        if (array_pointer <  length_array ) { //// if the Pointer stored in the member, which delegates is smaller than the length of the array stored in the delegate do
 
-          memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] = memberRetrieve.addressDelegatedTo[last_member_pointer];   ///need to change index
+          memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] = memberRetrieve.addressDelegatedTo[last_member_pointer]; ///need to change index
 
-          Member storage member_index_change = members[adress_index_change];               /// creating a mem struct in memory of the member which needs to change index
+          Member storage member_index_change = members[adress_index_change]; /// creating a mem struct in memory of the member which needs to change index
           member_index_change.arrayPointer[retrieveFrom] = array_pointer;
         }
         // we can now reduce the array length by 1
