@@ -450,9 +450,9 @@ contract Moloch {
         members[retrieveFrom].addressDelegatedTo.length = members[retrieveFrom].addressDelegatedTo.length.sub(1);
 
 
-        //require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
+
         member.delegated = false;
-       // emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
+       emit SharesRetrieved(retrieveFrom, msg.sender);
     }
 
     /***************

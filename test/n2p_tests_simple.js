@@ -266,6 +266,42 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
 
   }
 
+  const verifyVotewithDelegation = async (delegate, member, proposal_before, votes, proposal_number) =>{
+
+      const member_memberData = await moloch.members(member);
+      const delegate_memberData = await moloch.members(delegate);
+
+
+      const delegated_shares = await moloch.getSharesDelegated(delegate)
+      const member_shares = member_memberData.shares
+      const proposalData = await moloch.proposalQueue(proposal_number)
+      const final_votes = Number(member_shares) + Number(delegate_memberData.shares)
+      const memberProposalVote_delegate = await moloch.getMemberProposalVote(delegate, proposal_number)
+      const memberProposalVote_member = await moloch.getMemberProposalVote(member, proposal_number)
+
+      assert.equal(proposal_before.yesVotes, 0) // checks proposal before
+      assert.equal(Number(member_shares) + Number(delegate_memberData.shares), final_votes) // checks final vote
+      assert.equal(proposalData.yesVotes, final_votes) // checks final vote
+      assert.equal(proposalData.yesVotes, Number(delegated_shares) + Number(delegate_memberData.shares)) // checks final vote
+      assert.equal(memberProposalVote_delegate, 1) // checks if vote is set
+      assert.equal(memberProposalVote_member, 1) // checks if vote is set
+    }
+
+    const verifyVoteonProposalThanDelegation = async (delegate, member, proposal_before, votes_member, proposal_number) =>{
+      const member_memberData = await moloch.members(member);
+      const delegate_memberData = await moloch.members(delegate);
+      const proposalData = await moloch.proposalQueue(proposal_number);
+      const final_yes_votes = proposalData.yesVotes;
+      const final_no_votes = proposalData.yesVotes;
+
+      assert.equal(proposal_before.yesVotes, 0) // checks proposal before
+      assert.equal(proposal_before.noVotes, 0) // checks proposal before
+      assert.equal(proposalData.yesVotes, Number(delegate_memberData.shares)) // checks final vote
+      assert.equal(proposalData.noVotes, Number(member_memberData.shares)) // checks final vote
+
+
+    }
+
 
 //// start here
   beforeEach(async() =>{
@@ -289,14 +325,14 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
       applicant: accounts[1],
       tokenTribute: 100,
       sharesRequested: 1,
-      details: "all hail moloch"
+      details: "First Proposal - getting 1 share"
     }
 
     proposal2 = {
       applicant: accounts[1],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "all hail moloch"
+      details: "Second Proposal - getting 8 shares"
     }
 
 
@@ -433,7 +469,6 @@ describe('processProposal', () => {
 
   it('happy case', async () => {
     const balance = await token.balanceOf(accounts[0]).toString(10);
-    console.log(balance)
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
     await moloch.processProposal(0, { from: accounts[9]})
     await verifyProcessProposal(proposal1, 0, accounts[0], accounts[9], {
@@ -499,13 +534,21 @@ describe('delegateShares', () => {
   })
 
   it('require fail - attempting delegation without being member', async () => {
-    await moloch.delegateShares(accounts[0], { from: accounts[4] }).should.be.rejectedWith('onlyMember - not a member')
+    await moloch.delegateShares(accounts[0], { from: accounts[4] }).should.be.rejectedWith('onlyDelegate - not a delegate.')
   })
 
   it('require fail - delegate shares to nonmember', async () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
     await moloch.delegateShares(accounts[4], { from: accounts[1] }).should.be.rejectedWith('attempting to delegate shares to nonmember')
+  })
+
+  it('require fail - delegate shares while beeing delegate', async () => {
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
+    await moloch.delegateShares(accounts[1], { from: accounts[0] }).should.be.rejectedWith('attempting to delegate shares while other shares are delegated to sender')
   })
 
   //
@@ -520,7 +563,7 @@ describe('delegateShares', () => {
     const sender_before = await moloch.members(accounts[0])
     const delegate_before = await moloch.members(accounts[1])
     await moloch.ragequit(8,{from: accounts[1]})
-    await moloch.delegateShares(accounts[0], { from: accounts[1] }).should.be.rejectedWith('onlyMember - not a member')
+    await moloch.delegateShares(accounts[0], { from: accounts[1] }).should.be.rejectedWith('onlyDelegate - not a delegate.')
   })
 
 it('require fail - trying to ragequit the delegated shares', async () => {
@@ -530,6 +573,7 @@ it('require fail - trying to ragequit the delegated shares', async () => {
   await verifyDelegation(accounts[0],sender_before,accounts[1],delegate_before,1)
   await moloch.ragequit(9,{from: accounts[1]}).should.be.rejectedWith('insufficient shares')
 })
+
 
 })
 
@@ -619,12 +663,55 @@ describe('delegateVote', () => {
 
   it('happy case - vote with delegated shares', async () => {
     await moveForwardPeriods(1)
+    const proposalData_before = await moloch.proposalQueue(1)
     await moloch.submitVote(1, 1, { from: accounts[0] })
+    await verifyVotewithDelegation(accounts[0],accounts[1],proposalData_before,9,1)
   })
 
   it('require fail - trying to vote when shares are delegated', async () => {
     await moveForwardPeriods(1)
-    await moloch.submitVote(1, 1, { from: accounts[1] }).should.be.rejectedWith('Moloch::member has shares delegated')
+
+    await moloch.submitVote(1, 1, { from: accounts[1] }).should.be.rejectedWith('member has shares delegated')
+  })
+
+
+})
+
+describe('soft edgecases', () => {
+
+  beforeEach(async () => {
+    await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
+    await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+
+    await token.transfer(proposal1.applicant, proposal1.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal1.tokenTribute, { from: proposal1.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal1.applicant, proposal1.tokenTribute, proposal1.sharesRequested, proposal1.details, { from:  accounts[0] })
+  })
+
+  it('voting on a proposal than delegating shares to member which than votes on same proposal', async () => {
+    await moveForwardPeriods(1)
+    const proposalData_before = await moloch.proposalQueue(1)
+    await moloch.submitVote(1, 2, { from: accounts[1] })
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await moloch.submitVote(1, 1, { from: accounts[0] })
+    await verifyVoteonProposalThanDelegation(accounts[0],accounts[1],proposalData_before,8,1)
+  })
+
+  it('require fail - delegation vote than retrive shares and trying to vote', async () => {
+    await moveForwardPeriods(1)
+    const proposalData_before = await moloch.proposalQueue(1)
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await moloch.submitVote(1, 1, { from: accounts[0] })
+    await moloch.retrieveShares(accounts[0], { from: accounts[1] })
+    await moloch.submitVote(1, 2, { from: accounts[1] }).should.be.rejectedWith('member has already voted on this proposal')
   })
 
 })
