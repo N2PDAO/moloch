@@ -1,5 +1,5 @@
 {
-  "name": "moloch",
+  "name": "n2p_moloch",
   "version": "1.0.0",
   "description": "",
   "main": "truffle.js",
@@ -30,18 +30,18 @@
   },
   "scripts": {
     "compile": "node_modules/.bin/truffle compile",
-    "test": "node_modules/.bin/truffle test test/spank.js",
-    "gcli": "ganache-cli -m \"sword card process delay payment chalk jar list dinner fury carbon bunker\" --gasLimit 7500000"
+    "test": "truffle test test/n2p_tests_simple.js",
+    "gcli": "ganache-cli -m \"sword card process delay payment chalk jar list dinner fury carbon bunker\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ConnextProject/moloch.git"
+    "url": ""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ConnextProject/moloch/issues"
+    "url": ""
   },
-  "homepage": "https://github.com/ConnextProject/moloch#readme"
+  "homepage": ""
 }

@@ -1,5 +1,7 @@
 STEAL THIS CODE ¯\_(ツ)_/¯
 
+This is the repo for the n2p fork of Moloch. We have edited their readme to include our additional code.
+
 # Moloch
 
 > Moloch the incomprehensible prison! Moloch the crossbone soulless jailhouse and Congress of sorrows! Moloch whose buildings are judgment! Moloch the vast stone of war! Moloch the stunned governments!
@@ -47,14 +49,9 @@ In this fashion, the ragequit mechanism also provides an interesting incentive i
 
 ## Testing
 
-`npm i`
-`npm run compile` (note the gnosis safe contracts are in the artifacts/ repo)
-
-In a separate window: `npm run gcli`
-`Ganache CLI v6.1.5 (ganache-core: 2.1.4)`
-
-Then, `truffle test`
-`Truffle v5.0.0-beta.0`
+- `npm i`
+- In a separate window: `npm run gcli`
+- Then, `truffle test`
 
 # Moloch.sol
 
@@ -69,10 +66,12 @@ function below.
 ## Additional Code For N2P DAO
 
 ```
-    mapping (address => uint256) sharesDelegated; // the address of the member shares are delegated to & # of shares the member delegated to a certain adress
+mapping (address => uint256) arrayPointer;    // the Pointer at what position the adress of this member is stored in the array of the delegated
+address[] addressDelegatedTo;  // the adreses of member which delegated to this member
+bool delegated;
 ```
 
-Addition to the `Member` data struct. Mapping of address of member who controls delegated shares & the number of shares. 
+Additions to the `Member` data struct. 
 
 ```
         function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
@@ -86,12 +85,12 @@ Addition to the `Member` data struct. Mapping of address of member who controls 
         emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
     }
 ```
-Function to delegate shares. Called by member who wishes to delegate. 
-1. `delegateTo`: address of member to delegate shares to. 
-2. `sharesToDelegate`: number of shares to delegate. Removed from sending member's `shares` key in struct and added to `sharesDelegated` mapping in recieving member's struct. 
-3. `delegateTo` cannot be a zero address. 
-4. `sharesToDelegate` must be > 0. 
-5. `sharesToDelegate` must be <= number of shares owned by the member delegating their shares. 
+Function to delegate shares. Called by member who wishes to delegate.
+1. `delegateTo`: address of member to delegate shares to.
+2. `sharesToDelegate`: number of shares to delegate. Removed from sending member's `shares` key in struct and added to `sharesDelegated` mapping in recieving member's struct.
+3. `delegateTo` cannot be a zero address.
+4. `sharesToDelegate` must be > 0.
+5. `sharesToDelegate` must be <= number of shares owned by the member delegating their shares.
 6. Emits `SharesDelegated` event.  
 
 ```
@@ -106,14 +105,14 @@ Function to delegate shares. Called by member who wishes to delegate.
         emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
     }
 ```
-Function to retrieve shares that have been delegated. Called by member who wishes to retrieve their shares. 
-1. `retrieveFrom`: address of member to retrieve delegated shares from. 
-2. `sharesToRetrieve`: number of shares to retrieve. Removed from `sharesDelegated` mapping. 
-3. `retrieveFrom` cannot be a zero address. 
+Function to retrieve shares that have been delegated. Called by member who wishes to retrieve their shares.
+1. `retrieveFrom`: address of member to retrieve delegated shares from.
+2. `sharesToRetrieve`: number of shares to retrieve. Removed from `sharesDelegated` mapping.
+3. `retrieveFrom` cannot be a zero address.
 4. `sharesToRetrieve` must be <= 0.
-5. Emits `SharesRetrieved` event. 
+5. Emits `SharesRetrieved` event.
 
-## Data Structures 
+## Data Structures
 
 #### Global Constants
 ```
