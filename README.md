@@ -63,78 +63,30 @@ NOT, IT IS YOUR RESPONSIBILITY TO ABORT THE PROPOSAL IMMEDIATELY.
 For more information about this, please see the documentation for the `abort`
 function below.
 
-## Additional Code For N2P DAO
-
-```
-mapping (address => uint256) arrayPointer;    // the Pointer at what position the adress of this member is stored in the array of the delegated
-address[] addressDelegatedTo;  // the adreses of member which delegated to this member
-bool delegated;
-```
-
-Additions to the `Member` data struct. 
-
-```
-        function delegateShares(address delegateTo, uint256 sharesToDelegate) public onlyDelegate {
-        Member storage member = members[msg.sender];
-        Member storage delegateMember = members[delegateTo];
-        require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
-        require(sharesToDelegate<=member.shares, "Moloch(N2P)::delegateShares - attempting to delegate more shares than you own");
-        member.sharesDelegated[delegateTo] = member.sharesDelegated[delegateTo].add(sharesToDelegate);
-        delegateMember.delegatedShares = delegateMember.delegatedShares.add(sharesToDelegate);
-        member.shares = member.shares.sub(sharesToDelegate);
-        emit SharesDelegated(msg.sender, delegateTo, sharesToDelegate);
-    }
-```
-Function to delegate shares. Called by member who wishes to delegate.
-1. `delegateTo`: address of member to delegate shares to.
-2. `sharesToDelegate`: number of shares to delegate. Removed from sending member's `shares` key in struct and added to `sharesDelegated` mapping in recieving member's struct.
-3. `delegateTo` cannot be a zero address.
-4. `sharesToDelegate` must be > 0.
-5. `sharesToDelegate` must be <= number of shares owned by the member delegating their shares.
-6. Emits `SharesDelegated` event.  
-
-```
-    function retrieveShares(address retrieveFrom, uint256 sharesToRetrieve) public onlyDelegate {
-        Member storage member = members[msg.sender];
-        Member storage memberRetrieve = members[retrieveFrom];
-        require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
-        require(sharesToRetrieve<=member.sharesDelegated[retrieveFrom], "Moloch(N2P)::delegateShares - attempting to retrieve more shares that you delegated");
-        memberRetrieve.delegatedShares = memberRetrieve.delegatedShares.sub(sharesToRetrieve);
-        member.sharesDelegated[retrieveFrom] = member.sharesDelegated[retrieveFrom].sub(sharesToRetrieve);
-        member.shares = member.shares.add(sharesToRetrieve);
-        emit SharesRetrieved(retrieveFrom, msg.sender, sharesToRetrieve);
-    }
-```
-Function to retrieve shares that have been delegated. Called by member who wishes to retrieve their shares.
-1. `retrieveFrom`: address of member to retrieve delegated shares from.
-2. `sharesToRetrieve`: number of shares to retrieve. Removed from `sharesDelegated` mapping.
-3. `retrieveFrom` cannot be a zero address.
-4. `sharesToRetrieve` must be <= 0.
-5. Emits `SharesRetrieved` event.
-
 ## Data Structures
 
 #### Global Constants
 ```
-    uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
-    uint256 public votingPeriodLength; // default = 35 periods (7 days)
-    uint256 public gracePeriodLength; // default = 35 periods (7 days)
-    uint256 public abortWindow; // default = 5 periods (1 day)
-    uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
-    uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
-    uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
-    uint256 public summoningTime; // needed to determine the current period
+uint256 public periodDuration; // default = 17280 = 4.8 hours in seconds (5 periods per day)
+uint256 public votingPeriodLength; // default = 35 periods (7 days)
+uint256 public gracePeriodLength; // default = 35 periods (7 days)
+uint256 public abortWindow; // default = 5 periods (1 day)
+uint256 public proposalDeposit; // default = 10 ETH (~$1,000 worth of ETH at contract deployment)
+uint256 public dilutionBound; // default = 3 - maximum multiplier a YES voter will be obligated to pay in case of mass ragequit
+uint256 public processingReward; // default = 0.1 - amount of ETH to give to whoever processes a proposal
+uint256 public summoningTime; // needed to determine the current period
 
-    IERC20 public approvedToken; // approved token contract reference; default = wETH
-    GuildBank public guildBank; // guild bank contract reference
+IERC20 public approvedToken; // approved token contract reference; default = wETH
+GuildBank public guildBank; // guild bank contract reference
 
-    // HARD-CODED LIMITS
-    // These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
-    // with periods or shares, yet big enough to not limit reasonable use cases.
-    uint256 constant MAX_VOTING_PERIOD_LENGTH = 10**18; // maximum length of voting period
-    uint256 constant MAX_GRACE_PERIOD_LENGTH = 10**18; // maximum length of grace period
-    uint256 constant MAX_DILUTION_BOUND = 10**18; // maximum dilution bound
-    uint256 constant MAX_NUMBER_OF_SHARES = 10**18; // maximum number of shares that can be minted
+// HARD-CODED LIMITS
+// These numbers are quite arbitrary; they are small enough to avoid overflows when doing calculations
+// with periods or shares, yet big enough to not limit reasonable use cases.
+uint256 constant MAX_VOTING_PERIOD_LENGTH = 10**18; // maximum length of voting period
+uint256 constant MAX_GRACE_PERIOD_LENGTH = 10**18; // maximum length of grace period
+uint256 constant MAX_DILUTION_BOUND = 10**18; // maximum dilution bound
+uint256 constant MAX_NUMBER_OF_SHARES = 10**18; // maximum number of shares that can be minted
+
 ```
 
 All deposits and tributes use the singular `approvedToken` set at contract deployment. In our case this will be wETH, and so we use wETH and ETH interchangably in this documentation.
@@ -171,19 +123,26 @@ The `Proposal` struct stores all relevant data for each proposal, and is saved i
 The `Member` struct stores all relevant data for each member, and is saved in the `members` mapping by the member's address.
 
 ```
-    struct Member {
-        address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
-        uint256 shares; // the # of shares assigned to this member
-        bool exists; // always true once a member has been created
-        uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
-        mapping (address => uint256) sharesDelegated; // the # of shares the member delegated to a certain adress
-    }
+struct Member {
+    address delegateKey; // the key responsible for submitting proposals and voting - defaults to member address unless updated
+    uint256 shares; // the # of shares assigned to this member
+    bool exists; // always true once a member has been created
+    uint256 highestIndexYesVote; // highest proposal index # on which the member voted YES
+
+    mapping (address => uint256) arrayPointer;    // the Pointer at what position the adress of this member is stored in the array of the delegated
+    address[] addressDelegatedTo;  // the adreses of member which delegated to this member
+    bool delegated;
+}
+
+
 
     mapping (address => Member) public members;
     mapping (address => address) public memberAddressByDelegateKey;
 ```
 
 The `exists` field is set to `true` when a member is accepted and remains `true` even if a member redeems 100% of their shares. It is used to prevent overwriting existing members (who may have ragequit all their shares).
+
+The `delegated` field is set to `true` when a member has delegated their shares to another member. It is used to stop the member voting when their shares are delegated to another member as well as preventing another member delegating shares to them (i.e. you cannot delegate shares to a member who has delegated their shares).
 
 For additional security, members can optionally change their `delegateKey` (used for submitting and voting on proposals) to a different address by calling `updateDelegateKey`. The `memberAddressByDelegateKey` stores the member's address by the `delegateKey` address.
 
@@ -346,49 +305,68 @@ Existing members can earn additional voting shares through new proposals if they
 ### submitVote
 While a proposal is in its voting period, members can submit their vote using their `delegateKey`.
 1. Saves the vote on the proposal by the member address.
-2. Based on their vote, adds the member's voting shares to the proposal `yesVotes` or `noVotes` tallies.
-4. If the member voted **Yes** and this is now the highest index proposal they voted **Yes** on, update their `highestIndexYesVote`.
+2. Based on their vote, adds the member's voting shares (and any shares delegated to them) to the proposal `yesVotes` or `noVotes` tallies.
+4. If the member voted **Yes** and this is now the highest index proposal they voted **Yes** on, update their `highestIndexYesVote` (in a situation where a member is voting with delegated shares, this only applies to the member actually voting, *not* the members who have delegated their shares).
 5. If the member voted **Yes** and this is now the most total shares that the Guild had during any **Yes** vote, update the proposal `maxTotalSharesAtYesVote`.
 
+
 ```
-    function submitVote(uint256 proposalIndex, uint8 uintVote) public onlyDelegate {
-        address memberAddress = memberAddressByDelegateKey[msg.sender];
-        Member storage member = members[memberAddress];
+function submitVote(uint256 proposalIndex, uint8 uintVote) public onlyDelegate {
+    address memberAddress = memberAddressByDelegateKey[msg.sender];
+    Member storage member = members[memberAddress];
 
-        require(proposalIndex < proposalQueue.length, "Moloch::submitVote - proposal does not exist");
-        Proposal storage proposal = proposalQueue[proposalIndex];
+    require(proposalIndex < proposalQueue.length, "Moloch::submitVote - proposal does not exist");
+    Proposal storage proposal = proposalQueue[proposalIndex];
 
-        require(uintVote < 3, "Moloch::submitVote - uintVote must be less than 3");
-        Vote vote = Vote(uintVote);
+    require(uintVote < 3, "Moloch::submitVote - uintVote must be less than 3");
+    Vote vote = Vote(uintVote);
 
-        require(getCurrentPeriod() >= proposal.startingPeriod, "Moloch::submitVote - voting period has not started");
-        require(!hasVotingPeriodExpired(proposal.startingPeriod), "Moloch::submitVote - proposal voting period has expired");
-        require(proposal.votesByMember[memberAddress] == Vote.Null, "Moloch::submitVote - member has already voted on this proposal");
-        require(vote == Vote.Yes || vote == Vote.No, "Moloch::submitVote - vote must be either Yes or No");
-        require(!proposal.aborted, "Moloch::submitVote - proposal has been aborted");
+    require(getCurrentPeriod() >= proposal.startingPeriod, "Moloch::submitVote - voting period has not started");
+    require(!hasVotingPeriodExpired(proposal.startingPeriod), "Moloch::submitVote - proposal voting period has expired");
+    require(proposal.votesByMember[memberAddress] == Vote.Null, "Moloch::submitVote - member has already voted on this proposal");
+    require(vote == Vote.Yes || vote == Vote.No, "Moloch::submitVote - vote must be either Yes or No");
+    require(!proposal.aborted, "Moloch::submitVote - proposal has been aborted");
 
-        // store vote
-        proposal.votesByMember[memberAddress] = vote;
+    require(member.delegated == false , "Moloch::member has shares delegated");
 
-        // count vote
-        if (vote == Vote.Yes) {
-            proposal.yesVotes = proposal.yesVotes.add(member.shares);
+    // store vote
+    proposal.votesByMember[memberAddress] = vote;
 
-            // set highest index (latest) yes vote - must be processed for member to ragequit
-            if (proposalIndex > member.highestIndexYesVote) {
-                member.highestIndexYesVote = proposalIndex;
-            }
+    uint256 finalShares;
 
-            // set maximum of total shares encountered at a yes vote - used to bound dilution for yes voters
-            if (totalShares > proposal.maxTotalSharesAtYesVote) {
-                proposal.maxTotalSharesAtYesVote = totalShares;
-            }
+    for (uint i=0; i< member.addressDelegatedTo.length; i++) {
+        address voted = member.addressDelegatedTo[i];
 
-        } else if (vote == Vote.No) {
-            proposal.noVotes = proposal.noVotes.add(member.shares);
+        if (proposal.votesByMember[voted] == Vote.Null){
+
+            uint256 memberdelegatedShares = members[voted].shares;
+            proposal.votesByMember[voted] = vote;
+            finalShares = finalShares.add(memberdelegatedShares);
+        }
+    }
+
+    // count vote
+    finalShares = finalShares.add(member.shares);
+    if (vote == Vote.Yes) {
+
+        proposal.yesVotes = proposal.yesVotes.add(finalShares);
+
+        // set highest index (latest) yes vote - must be processed for member to ragequit
+        if (proposalIndex > member.highestIndexYesVote) {
+            member.highestIndexYesVote = proposalIndex;
         }
 
-        emit SubmitVote(proposalIndex, msg.sender, memberAddress, uintVote);
+        // set maximum of total shares encountered at a yes vote - used to bound dilution for yes voters
+        if (totalShares > proposal.maxTotalSharesAtYesVote) {
+            proposal.maxTotalSharesAtYesVote = totalShares;
+        }
+
+    } else if (vote == Vote.No) {
+        proposal.noVotes = proposal.noVotes.add(finalShares);
+    }
+
+    emit SubmitVote(proposalIndex, msg.sender, memberAddress, uintVote);
+}
 ```
 
 ### processProposal
@@ -497,32 +475,36 @@ The `dilutionBound` is a safety mechanism designed to prevent a member from faci
 
 At any time, so long as a member has not voted YES on any proposal in the voting period or grace period, they can *irreversibly* destroy some of their shares and receive a proportional sum of ETH from the Guild Bank.
 
+Members cannot ragequit if they have delegated their shares to another member. These shares must be retrieved first.
+
 1. Reduce the member's shares by the `sharesToBurn` being destroyed.
 2. Reduce the total shares by the `sharesToBurn`.
 3. Instruct the Guild Bank to send the member their proportional amount of ETH.
 
 ```
-    function ragequit(uint256 sharesToBurn) public onlyMember {
-        uint256 initialTotalShares = totalShares;
+function ragequit(uint256 sharesToBurn) public onlyMember {
+    uint256 initialTotalShares = totalShares;
 
-        Member storage member = members[msg.sender];
+    Member storage member = members[msg.sender];
 
-        require(member.shares >= sharesToBurn, "Moloch::ragequit - insufficient shares");
+    require(member.shares >= sharesToBurn, "Moloch::ragequit - insufficient shares");
 
-        require(canRagequit(member.highestIndexYesVote), "Moloch::ragequit - cant ragequit until highest index proposal member voted YES on is processed");
+    require(canRagequit(member.highestIndexYesVote), "Moloch::ragequit - cant ragequit until highest index proposal member voted YES on is processed");
 
-        // burn shares
-        member.shares = member.shares.sub(sharesToBurn);
-        totalShares = totalShares.sub(sharesToBurn);
+    require(member.delegated == false , "Moloch::member has shares delegated");
 
-        // instruct guildBank to transfer fair share of tokens to the ragequitter
-        require(
-            guildBank.withdraw(msg.sender, sharesToBurn, initialTotalShares),
-            "Moloch::ragequit - withdrawal of tokens from guildBank failed"
-        );
+    // burn shares
+    member.shares = member.shares.sub(sharesToBurn);
+    totalShares = totalShares.sub(sharesToBurn);
 
-        emit Ragequit(msg.sender, sharesToBurn);
-    }
+    // instruct guildBank to transfer fair share of tokens to the ragequitter
+    require(
+        guildBank.withdraw(msg.sender, sharesToBurn, initialTotalShares),
+        "Moloch::ragequit - withdrawal of tokens from guildBank failed"
+    );
+
+    emit Ragequit(msg.sender, sharesToBurn);
+}
 ```
 
 ### abort
@@ -593,7 +575,91 @@ use, or back to their member address.
     }
 ```
 
+### delegateShares
+
+Members can delegate their shares to another member. All shares are always delegated (i.e. members can only delegate to one other member. ). They must use the member's `member` address, not the `delegateKey` address.
+
+Multiple members can delegate to one other member (i.e. Member A could vote with the delegated shares of Members B and C).
+
+```
+function delegateShares(address delegateTo) public onlyDelegate {
+    Member storage member = members[msg.sender];
+    Member storage delegateMember = members[delegateTo];
+    require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
+    require(member.delegated == false, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated");
+    require(member.addressDelegatedTo.length == 0, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated to sender");   //testcase to catch this
+    require(delegateMember.exists == true, "Moloch(N2P)::delegateShares - attempting to delegate shares to nonmember");
+
+    delegateMember.addressDelegatedTo.push(msg.sender);
+    member.arrayPointer[delegateTo] = delegateMember.addressDelegatedTo.length;
+    member.delegated = true;
+
+   emit SharesDelegated(msg.sender, delegateTo);
+}
+```
+
+### retrieveShares
+
+Members can call this at any time to reset the `delegated` boolean to `false`, allowing them to vote on proposals themselves.
+
+They must similarly use the member's `member` address as an argument, not their `delegateKey` address.
+
+After they retrieve their shares, they cannot vote on proposals that the member they delegated to has already voted on.
+
+```
+function retrieveShares(address retrieveFrom) public onlyDelegate {
+    Member storage member = members[msg.sender];
+    Member storage memberRetrieve = members[retrieveFrom];
+    uint256 array_pointer = member.arrayPointer[retrieveFrom];
+
+    require(retrieveFrom != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
+    require(member.delegated == true, "Moloch(N2P)::delegateShares - invalid trial attempting to retrive shares");
+    require(memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] == msg.sender, "Moloch(N2P)::delegateShares - invalid trial attempting to retrive not owned shares" );
+
+    uint256 last_member_pointer = memberRetrieve.addressDelegatedTo.length.sub(1);
+    uint256 length_array = memberRetrieve.addressDelegatedTo.length;
+    address adress_index_change = memberRetrieve.addressDelegatedTo[last_member_pointer];
+
+    //cleaning the array
+    if (array_pointer <  length_array ) { //// if the Pointer stored in the member, which delegates is smaller than the length of the array stored in the delegate do
+
+      memberRetrieve.addressDelegatedTo[array_pointer.sub(1)] = memberRetrieve.addressDelegatedTo[last_member_pointer]; ///need to change index
+
+      Member storage member_index_change = members[adress_index_change]; /// creating a mem struct in memory of the member which needs to change index
+      member_index_change.arrayPointer[retrieveFrom] = array_pointer;
+    }
+    // we can now reduce the array length by 1
+    members[retrieveFrom].addressDelegatedTo.length = members[retrieveFrom].addressDelegatedTo.length.sub(1);
+
+
+
+    member.delegated = false;
+   emit SharesRetrieved(retrieveFrom, msg.sender);
+}
+```
+
 ### Getters
+
+#### getArrayPointer
+
+Returns the index of the member's address in the delegated array.
+
+```
+function getArrayPointer(address delegate, address member)public view returns(uint256){
+    return  members[member].arrayPointer[delegate];
+}
+```
+
+#### getArray
+
+Returns array of addresses of members who have delegated to `delegate` address argument.
+
+```
+function getArray(address delegate)public view returns(address[] memory){
+    Member memory member = members[delegate];
+    return  member.addressDelegatedTo;
+}
+```
 
 #### max
 
@@ -623,6 +689,25 @@ Returns the length of the proposal queue.
     function getProposalQueueLength() public view returns (uint256) {
         return proposalQueue.length;
     }
+```
+
+#### getSharesDelegated
+
+Returns number of delegated shares of `delegate` address argument.
+
+```
+function getSharesDelegated(address delegate) public view returns(uint256){
+    Member storage member = members[delegate];
+    uint256 delegatedShares;
+
+    for (uint i=0; i< member.addressDelegatedTo.length; i++) {
+        address delegator = member.addressDelegatedTo[i];
+        uint256 memberdelegatedShares = members[delegator].shares;
+        delegatedShares = delegatedShares.add(memberdelegatedShares);
+    }
+
+    return delegatedShares;
+}
 ```
 
 #### canRagequit
