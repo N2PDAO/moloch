@@ -51,7 +51,9 @@ In this fashion, the ragequit mechanism also provides an interesting incentive i
 
 - `npm i`
 - In a separate window: `npm run gcli`
-- Then, `truffle test`
+- Then, `npm run test`
+
+We've left in the original `moloch.js` test file for reference, but the actual test file being used is `n2p_tests_simple.js`
 
 # Moloch.sol
 
