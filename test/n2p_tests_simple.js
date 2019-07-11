@@ -335,6 +335,41 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
       details: "Second Proposal - getting 8 shares"
     }
 
+    proposal3 = {
+      applicant: accounts[2],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Second Proposal - getting 8 shares"
+    }
+
+    proposal4 = {
+      applicant: accounts[3],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Second Proposal - getting 8 shares"
+    }
+
+    proposal5 = {
+      applicant: accounts[4],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Second Proposal - getting 8 shares"
+    }
+
+    proposal6 = {
+      applicant: accounts[5],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Second Proposal - getting 8 shares"
+    }
+
+    proposal7 = {
+      applicant: accounts[6],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Second Proposal - getting 8 shares"
+    }
+
 
   })
   it('verify deployment parameters', async () => {
@@ -429,10 +464,13 @@ describe('submitProposal', () => {
 
     it('happy case - yes vote', async () => {
       await moveForwardPeriods(1)
-      await moloch.submitVote(0, 1, { from: accounts[0] })
+      let txHash = await moloch.submitVote(0, 1, { from: accounts[0] })
       await verifySubmitVote(proposal1, 0, accounts[0], 1, {
         expectedMaxSharesAtYesVote: 1
       })
+      console.log(`transaction hash from vote: ${txHash.tx}`)
+      const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
+      console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
     })
 
     it('happy case - no vote', async () => {
@@ -516,8 +554,14 @@ describe('delegateShares', () => {
   it('happy case - delegation', async () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
-    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+
+    // await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    let txHash = await moloch.delegateShares(accounts[0], { from: accounts[1] })
     await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
+    console.log(`transaction hash from delegateShares function: ${txHash.tx}`)
+    const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
+    console.log(`cumulative gas used in delegateShares function: ${receipt.cumulativeGasUsed}`);
+
   })
 
   it('require fail - delegate without retrive', async () => {
@@ -543,7 +587,7 @@ describe('delegateShares', () => {
     await moloch.delegateShares(accounts[4], { from: accounts[1] }).should.be.rejectedWith('attempting to delegate shares to nonmember')
   })
 
-  it('require fail - delegate shares while beeing delegate', async () => {
+  it('require fail - delegate shares while being delegate', async () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
     await moloch.delegateShares(accounts[0], { from: accounts[1] })
@@ -664,9 +708,42 @@ describe('delegateVote', () => {
   it('happy case - vote with delegated shares', async () => {
     await moveForwardPeriods(1)
     const proposalData_before = await moloch.proposalQueue(1)
-    await moloch.submitVote(1, 1, { from: accounts[0] })
+    let txHash = await moloch.submitVote(1, 1, { from: accounts[0] })
     await verifyVotewithDelegation(accounts[0],accounts[1],proposalData_before,9,1)
+    console.log(`transaction hash from vote with delegated share: ${txHash.tx}`)
+    const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
+    console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
   })
+
+  it('happy case - multiple delegations to one account then vote', async () => {
+    const sender_before = await moloch.members(accounts[1])
+    const delegate_before = await moloch.members(accounts[0])
+    await moloch.delegateShares(accounts[0], { from: accounts[1] })
+    await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
+
+    const sender_before1 = await moloch.members(accounts[2])
+    await moloch.delegateShares(accounts[0], { from: accounts[2] })
+    await verifyDelegation(accounts[2], sender_before1, accounts[0], delegate_before, 8)
+
+    const sender_before2 = await moloch.members(accounts[3])
+    await moloch.delegateShares(accounts[0], { from: accounts[3] })
+    await verifyDelegation(accounts[3], sender_before2, accounts[0], delegate_before, 8)
+
+    const sender_before3 = await moloch.members(accounts[4])
+    await moloch.delegateShares(accounts[0], { from: accounts[4] })
+    await verifyDelegation(accounts[4], sender_before3, accounts[0], delegate_before, 8)
+
+    const sender_before4 = await moloch.members(accounts[5])
+    await moloch.delegateShares(accounts[0], { from: accounts[5] })
+    await verifyDelegation(accounts[5], sender_before4, accounts[0], delegate_before, 8)
+
+    const sender_before5 = await moloch.members(accounts[6])
+    await moloch.delegateShares(accounts[0], { from: accounts[6] })
+    await verifyDelegation(accounts[6], sender_before5, accounts[0], delegate_before, 8)
+
+    console.log("NEEDS TO BE FINISHED")
+  })
+
 
   it('require fail - trying to vote when shares are delegated', async () => {
     await moveForwardPeriods(1)
