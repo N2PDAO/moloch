@@ -339,35 +339,42 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
       applicant: accounts[2],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "Second Proposal - getting 8 shares"
+      details: "Third Proposal - getting 8 shares"
     }
 
     proposal4 = {
       applicant: accounts[3],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "Second Proposal - getting 8 shares"
+      details: "Fourth Proposal - getting 8 shares"
     }
 
     proposal5 = {
       applicant: accounts[4],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "Second Proposal - getting 8 shares"
+      details: "Fifth Proposal - getting 8 shares"
     }
 
     proposal6 = {
       applicant: accounts[5],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "Second Proposal - getting 8 shares"
+      details: "Sixth Proposal - getting 8 shares"
     }
 
     proposal7 = {
       applicant: accounts[6],
       tokenTribute: 100,
       sharesRequested: 8,
-      details: "Second Proposal - getting 8 shares"
+      details: "Seventh Proposal - getting 8 shares"
+    }
+
+    proposal8 = {
+      applicant: accounts[1],
+      tokenTribute: 100,
+      sharesRequested: 8,
+      details: "Eigth Proposal - getting 8 shares"
     }
 
 
@@ -715,42 +722,109 @@ describe('delegateVote', () => {
     console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
   })
 
+  it('require fail - trying to vote when shares are delegated', async () => {
+    await moveForwardPeriods(1)
+    await moloch.submitVote(1, 1, { from: accounts[1] }).should.be.rejectedWith('member has shares delegated')
+  })
+
+
+})
+
+describe('delegateVote test for gas costs', () => {
+  beforeEach(async () => {
+    await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
+    await moloch.submitProposal(proposal2.applicant, proposal2.tokenTribute, proposal2.sharesRequested, proposal2.details, { from: accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(0, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(0, { from: accounts[9]})
+
+    await token.transfer(proposal3.applicant, proposal3.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal3.tokenTribute, { from: proposal3.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal3.applicant, proposal3.tokenTribute, proposal3.sharesRequested, proposal3.details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(1, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(1, { from: accounts[9]})
+
+    await token.transfer(proposal4.applicant, proposal4.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal4.tokenTribute, { from: proposal4.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal4.applicant, proposal4.tokenTribute, proposal4.sharesRequested, proposal4.details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(2, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(2, { from: accounts[9]})
+
+    await token.transfer(proposal5.applicant, proposal5.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal5.tokenTribute, { from: proposal5.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal5.applicant, proposal5.tokenTribute, proposal5.sharesRequested, proposal5.details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(3, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(3, { from: accounts[9]})
+
+    await token.transfer(proposal6.applicant, proposal6.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal6.tokenTribute, { from: proposal6.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal6.applicant, proposal6.tokenTribute, proposal6.sharesRequested, proposal6.details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(4, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(4, { from: accounts[9]})
+
+    await token.transfer(proposal7.applicant, proposal7.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal7.tokenTribute, { from: proposal7.applicant })   // tokenTribute
+    await moloch.submitProposal(proposal7.applicant, proposal7.tokenTribute, proposal7.sharesRequested, proposal7.details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    await moloch.submitVote(5, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(5, { from: accounts[9]})
+
+    // proposal to be voted on after delegation for gas test check 
+    await token.transfer(proposal8.applicant, proposal8.tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposal8.tokenTribute, { from: proposal8.applicant })
+    await moloch.submitProposal(proposal8.applicant, proposal8.tokenTribute, proposal8.sharesRequested, proposal8.details, { from: accounts[0] })
+    await moveForwardPeriods(1)
+  })
+
   it('happy case - multiple delegations to one account then vote', async () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
     await moloch.delegateShares(accounts[0], { from: accounts[1] })
-    await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
 
     const sender_before1 = await moloch.members(accounts[2])
     await moloch.delegateShares(accounts[0], { from: accounts[2] })
-    await verifyDelegation(accounts[2], sender_before1, accounts[0], delegate_before, 8)
 
     const sender_before2 = await moloch.members(accounts[3])
     await moloch.delegateShares(accounts[0], { from: accounts[3] })
-    await verifyDelegation(accounts[3], sender_before2, accounts[0], delegate_before, 8)
 
     const sender_before3 = await moloch.members(accounts[4])
     await moloch.delegateShares(accounts[0], { from: accounts[4] })
-    await verifyDelegation(accounts[4], sender_before3, accounts[0], delegate_before, 8)
 
     const sender_before4 = await moloch.members(accounts[5])
     await moloch.delegateShares(accounts[0], { from: accounts[5] })
-    await verifyDelegation(accounts[5], sender_before4, accounts[0], delegate_before, 8)
 
     const sender_before5 = await moloch.members(accounts[6])
     await moloch.delegateShares(accounts[0], { from: accounts[6] })
-    await verifyDelegation(accounts[6], sender_before5, accounts[0], delegate_before, 8)
 
-    console.log("NEEDS TO BE FINISHED")
+    let txHash = await moloch.submitVote(6, 1, { from: accounts[0] })
+    console.log(`transaction hash from vote with delegated share: ${txHash.tx}`)
+    const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
+    console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
   })
-
-
-  it('require fail - trying to vote when shares are delegated', async () => {
-    await moveForwardPeriods(1)
-
-    await moloch.submitVote(1, 1, { from: accounts[1] }).should.be.rejectedWith('member has shares delegated')
-  })
-
 
 })
 
