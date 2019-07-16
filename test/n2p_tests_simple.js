@@ -792,7 +792,7 @@ describe('delegateVote test for gas costs', () => {
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
     await moloch.processProposal(5, { from: accounts[9]})
 
-    // proposal to be voted on after delegation for gas test check 
+    // proposal to be voted on after delegation for gas test check
     await token.transfer(proposal8.applicant, proposal8.tokenTribute, { from: accounts[0] })
     await token.approve(moloch.address, 10, { from: accounts[0] })
     await token.approve(moloch.address, proposal8.tokenTribute, { from: proposal8.applicant })

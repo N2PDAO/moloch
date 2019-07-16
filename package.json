@@ -32,7 +32,7 @@
   "scripts": {
     "compile": "node_modules/.bin/truffle compile",
     "test": "truffle test test/n2p_tests_simple.js",
-    "gcli": "ganache-cli -m \"sword card process delay payment chalk jar list dinner fury carbon bunker\" --gasLimit 8000000"
+    "gcli": "ganache-cli -m \"sword card process delay payment chalk jar list dinner fury carbon bunker\" --gasLimit 8000000 --accounts 26"
   },
   "repository": {
     "type": "git",

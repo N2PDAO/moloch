@@ -413,6 +413,8 @@ contract Moloch {
     function delegateShares(address delegateTo) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
+        // make amount global var that's hardcoded 
+        // require(delegateMember.addressDelegatedTo.length < 5, "Moloch(N2P)::delegateShares - delegate already has enough delegates");
         require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
         require(member.delegated == false, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated");
         require(member.addressDelegatedTo.length == 0, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated to sender");   //testcase to catch this
