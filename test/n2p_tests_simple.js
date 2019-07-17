@@ -335,49 +335,6 @@ const verifyRetrieveShares = async (sender, sender_before, delegate, delegate_be
       details: "Second Proposal - getting 8 shares"
     }
 
-    proposal3 = {
-      applicant: accounts[2],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Third Proposal - getting 8 shares"
-    }
-
-    proposal4 = {
-      applicant: accounts[3],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Fourth Proposal - getting 8 shares"
-    }
-
-    proposal5 = {
-      applicant: accounts[4],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Fifth Proposal - getting 8 shares"
-    }
-
-    proposal6 = {
-      applicant: accounts[5],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Sixth Proposal - getting 8 shares"
-    }
-
-    proposal7 = {
-      applicant: accounts[6],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Seventh Proposal - getting 8 shares"
-    }
-
-    proposal8 = {
-      applicant: accounts[1],
-      tokenTribute: 100,
-      sharesRequested: 8,
-      details: "Eigth Proposal - getting 8 shares"
-    }
-
-
   })
   it('verify deployment parameters', async () => {
     const now = await blockTime() 
@@ -562,7 +519,6 @@ describe('delegateShares', () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
 
-    // await moloch.delegateShares(accounts[0], { from: accounts[1] })
     let txHash = await moloch.delegateShares(accounts[0], { from: accounts[1] })
     await verifyDelegation(accounts[1], sender_before, accounts[0], delegate_before, 8)
     console.log(`transaction hash from delegateShares function: ${txHash.tx}`)
@@ -731,7 +687,37 @@ describe('delegateVote', () => {
 })
 
 describe('delegateVote test for gas costs', () => {
+let proposalsArray = [
+  { applicant: accounts[2], tokenTribute: 100, sharesRequested: 8, details: "Third Proposal - getting 8 shares" },
+  { applicant: accounts[3], tokenTribute: 100, sharesRequested: 8, details: "Fourth Proposal - getting 8 shares" },
+  { applicant: accounts[4], tokenTribute: 100, sharesRequested: 8, details: "Fifth Proposal - getting 8 shares" },
+  { applicant: accounts[5], tokenTribute: 100, sharesRequested: 8, details: "Sixth Proposal - getting 8 shares" },
+  { applicant: accounts[6], tokenTribute: 100, sharesRequested: 8, details: "Seventh Proposal - getting 8 shares" },
+  { applicant: accounts[7], tokenTribute: 100, sharesRequested: 8, details: "Eighth Proposal - getting 8 shares" },
+  { applicant: accounts[8], tokenTribute: 100, sharesRequested: 8, details: "Ninth Proposal - getting 8 shares" },
+  { applicant: accounts[9], tokenTribute: 100, sharesRequested: 8, details: "Tenth Proposal - getting 8 shares" },
+  { applicant: accounts[10], tokenTribute: 100, sharesRequested: 8, details: "Eleventh Proposal - getting 8 shares" },
+  { applicant: accounts[12], tokenTribute: 100, sharesRequested: 8, details: "Twelth Proposal - getting 8 shares" },
+  { applicant: accounts[13], tokenTribute: 100, sharesRequested: 8, details: "Thirteenth Proposal - getting 8 shares" },
+  { applicant: accounts[14], tokenTribute: 100, sharesRequested: 8, details: "Fourteenth Proposal - getting 8 shares" },
+  { applicant: accounts[15], tokenTribute: 100, sharesRequested: 8, details: "Fifteenth Proposal - getting 8 shares" },
+  { applicant: accounts[16], tokenTribute: 100, sharesRequested: 8, details: "Sixteenth Proposal - getting 8 shares" },
+  { applicant: accounts[17], tokenTribute: 100, sharesRequested: 8, details: "Seventeenth Proposal - getting 8 shares" },
+  { applicant: accounts[18], tokenTribute: 100, sharesRequested: 8, details: "Eighteenth Proposal - getting 8 shares" },
+  { applicant: accounts[19], tokenTribute: 100, sharesRequested: 8, details: "Nineteenth Proposal - getting 8 shares" },
+  { applicant: accounts[20], tokenTribute: 100, sharesRequested: 8, details: "Twenteeth Proposal - getting 8 shares" },
+  { applicant: accounts[21], tokenTribute: 100, sharesRequested: 8, details: "Twentyfirst Proposal - getting 8 shares" },
+  { applicant: accounts[22], tokenTribute: 100, sharesRequested: 8, details: "Twentysecond Proposal - getting 8 shares" },
+  { applicant: accounts[23], tokenTribute: 100, sharesRequested: 8, details: "Twentythird Proposal - getting 8 shares" },
+  { applicant: accounts[24], tokenTribute: 100, sharesRequested: 8, details: "Twentyfourth Proposal - getting 8 shares" },
+  { applicant: accounts[25], tokenTribute: 100, sharesRequested: 8, details: "Twentyfifth Proposal - getting 8 shares" },
+  { applicant: accounts[26], tokenTribute: 100, sharesRequested: 8, details: "Twentysixth Proposal - getting 8 shares" },
+  { applicant: accounts[27], tokenTribute: 100, sharesRequested: 8, details: "Twentyseventh Proposal - getting 8 shares" },
+  { applicant: accounts[28], tokenTribute: 100, sharesRequested: 8, details: "Twentyeighth Proposal - getting 8 shares" },
+]
+
   beforeEach(async () => {
+    console.log(proposalsArray)
     await token.transfer(proposal2.applicant, proposal2.tokenTribute, { from: accounts[0] })
     await token.approve(moloch.address, 10, { from: accounts[0] })
     await token.approve(moloch.address, proposal2.tokenTribute, { from: proposal2.applicant })
@@ -742,65 +728,73 @@ describe('delegateVote test for gas costs', () => {
     await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
     await moloch.processProposal(0, { from: accounts[9]})
 
-    await token.transfer(proposal3.applicant, proposal3.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal3.tokenTribute, { from: proposal3.applicant })   // tokenTribute
-    await moloch.submitProposal(proposal3.applicant, proposal3.tokenTribute, proposal3.sharesRequested, proposal3.details, { from:  accounts[0] })
-    await moveForwardPeriods(1)
-    await moloch.submitVote(1, 1, { from: accounts[0] })
-    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(1, { from: accounts[9]})
-
-    await token.transfer(proposal4.applicant, proposal4.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal4.tokenTribute, { from: proposal4.applicant })   // tokenTribute
-    await moloch.submitProposal(proposal4.applicant, proposal4.tokenTribute, proposal4.sharesRequested, proposal4.details, { from:  accounts[0] })
-    await moveForwardPeriods(1)
-    await moloch.submitVote(2, 1, { from: accounts[0] })
-    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(2, { from: accounts[9]})
-
-    await token.transfer(proposal5.applicant, proposal5.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal5.tokenTribute, { from: proposal5.applicant })   // tokenTribute
-    await moloch.submitProposal(proposal5.applicant, proposal5.tokenTribute, proposal5.sharesRequested, proposal5.details, { from:  accounts[0] })
-    await moveForwardPeriods(1)
-    await moloch.submitVote(3, 1, { from: accounts[0] })
-    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(3, { from: accounts[9]})
-
-    await token.transfer(proposal6.applicant, proposal6.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal6.tokenTribute, { from: proposal6.applicant })   // tokenTribute
-    await moloch.submitProposal(proposal6.applicant, proposal6.tokenTribute, proposal6.sharesRequested, proposal6.details, { from:  accounts[0] })
-    await moveForwardPeriods(1)
-    await moloch.submitVote(4, 1, { from: accounts[0] })
-    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(4, { from: accounts[9]})
-
-    await token.transfer(proposal7.applicant, proposal7.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal7.tokenTribute, { from: proposal7.applicant })   // tokenTribute
-    await moloch.submitProposal(proposal7.applicant, proposal7.tokenTribute, proposal7.sharesRequested, proposal7.details, { from:  accounts[0] })
-    await moveForwardPeriods(1)
-    await moloch.submitVote(5, 1, { from: accounts[0] })
-    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
-    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
-    await moloch.processProposal(5, { from: accounts[9]})
-
-    // proposal to be voted on after delegation for gas test check
-    await token.transfer(proposal8.applicant, proposal8.tokenTribute, { from: accounts[0] })
-    await token.approve(moloch.address, 10, { from: accounts[0] })
-    await token.approve(moloch.address, proposal8.tokenTribute, { from: proposal8.applicant })
-    await moloch.submitProposal(proposal8.applicant, proposal8.tokenTribute, proposal8.sharesRequested, proposal8.details, { from: accounts[0] })
-    await moveForwardPeriods(1)
+    /**
+    REST OF THE PROPOSALS CAN BE WRITTEN INSIDE A FOR LOOP
+    proposal 3 = proposalArray[0]
+    */
+    let i;
+    for(i=0;i<proposalsArray.length;i++){
+      // put block in here 
+    }
+    // await token.transfer(proposal3.applicant, proposal3.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal3.tokenTribute, { from: proposal3.applicant })   // tokenTribute
+    // await moloch.submitProposal(proposal3.applicant, proposal3.tokenTribute, proposal3.sharesRequested, proposal3.details, { from:  accounts[0] })
+    // await moveForwardPeriods(1)
+    // await moloch.submitVote(1, 1, { from: accounts[0] })
+    // await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    // await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    // await moloch.processProposal(1, { from: accounts[9]})
+    //
+    // await token.transfer(proposal4.applicant, proposal4.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal4.tokenTribute, { from: proposal4.applicant })   // tokenTribute
+    // await moloch.submitProposal(proposal4.applicant, proposal4.tokenTribute, proposal4.sharesRequested, proposal4.details, { from:  accounts[0] })
+    // await moveForwardPeriods(1)
+    // await moloch.submitVote(2, 1, { from: accounts[0] })
+    // await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    // await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    // await moloch.processProposal(2, { from: accounts[9]})
+    //
+    // await token.transfer(proposal5.applicant, proposal5.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal5.tokenTribute, { from: proposal5.applicant })   // tokenTribute
+    // await moloch.submitProposal(proposal5.applicant, proposal5.tokenTribute, proposal5.sharesRequested, proposal5.details, { from:  accounts[0] })
+    // await moveForwardPeriods(1)
+    // await moloch.submitVote(3, 1, { from: accounts[0] })
+    // await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    // await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    // await moloch.processProposal(3, { from: accounts[9]})
+    //
+    // await token.transfer(proposal6.applicant, proposal6.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal6.tokenTribute, { from: proposal6.applicant })   // tokenTribute
+    // await moloch.submitProposal(proposal6.applicant, proposal6.tokenTribute, proposal6.sharesRequested, proposal6.details, { from:  accounts[0] })
+    // await moveForwardPeriods(1)
+    // await moloch.submitVote(4, 1, { from: accounts[0] })
+    // await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    // await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    // await moloch.processProposal(4, { from: accounts[9]})
+    //
+    // await token.transfer(proposal7.applicant, proposal7.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal7.tokenTribute, { from: proposal7.applicant })   // tokenTribute
+    // await moloch.submitProposal(proposal7.applicant, proposal7.tokenTribute, proposal7.sharesRequested, proposal7.details, { from:  accounts[0] })
+    // await moveForwardPeriods(1)
+    // await moloch.submitVote(5, 1, { from: accounts[0] })
+    // await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    // await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    // await moloch.processProposal(5, { from: accounts[9]})
+    //
+    // // proposal to be voted on after delegation for gas test check
+    // await token.transfer(proposal8.applicant, proposal8.tokenTribute, { from: accounts[0] })
+    // await token.approve(moloch.address, 10, { from: accounts[0] })
+    // await token.approve(moloch.address, proposal8.tokenTribute, { from: proposal8.applicant })
+    // await moloch.submitProposal(proposal8.applicant, proposal8.tokenTribute, proposal8.sharesRequested, proposal8.details, { from: accounts[0] })
+    // await moveForwardPeriods(1)
   })
 
-  it('happy case - multiple delegations to one account then vote', async () => {
+  it.skip('happy case - multiple delegations to one account then vote', async () => {
     const sender_before = await moloch.members(accounts[1])
     const delegate_before = await moloch.members(accounts[0])
     await moloch.delegateShares(accounts[0], { from: accounts[1] })

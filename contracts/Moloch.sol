@@ -30,6 +30,8 @@ contract Moloch {
     uint256 constant MAX_DILUTION_BOUND = 10**18; // maximum dilution bound
     uint256 constant MAX_NUMBER_OF_SHARES = 10**18; // maximum number of shares that can be minted
 
+    uint256 constant MAX_NUMBER_OF_DELEGATES = 25; // maximum number of delegates one member can vote on behalf of
+
     /***************
     EVENTS
     ***************/
@@ -413,11 +415,10 @@ contract Moloch {
     function delegateShares(address delegateTo) public onlyDelegate {
         Member storage member = members[msg.sender];
         Member storage delegateMember = members[delegateTo];
-        // make amount global var that's hardcoded 
-        // require(delegateMember.addressDelegatedTo.length < 5, "Moloch(N2P)::delegateShares - delegate already has enough delegates");
+        require(delegateMember.addressDelegatedTo.length < MAX_NUMBER_OF_DELEGATES, "Moloch(N2P)::delegateShares - delegate already has enough delegates");
         require(delegateTo != address(0), "Moloch(N2P)::delegateShares - delegate cannot be 0");
         require(member.delegated == false, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated");
-        require(member.addressDelegatedTo.length == 0, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated to sender");   //testcase to catch this
+        require(member.addressDelegatedTo.length == 0, "Moloch(N2P)::delegateShares - attempting to delegate shares while other shares are delegated to sender");
         require(delegateMember.exists == true, "Moloch(N2P)::delegateShares - attempting to delegate shares to nonmember");
 
         delegateMember.addressDelegatedTo.push(msg.sender);
