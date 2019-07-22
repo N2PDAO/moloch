@@ -746,9 +746,8 @@ let proposalsArray = [
     const delegate_before = await moloch.members(accounts[0])
     let i;
     for(i=0;i<23;i++){
-      console.log(i)
-        const sender_before = await moloch.members(accounts[i])
-        await moloch.delegateShares(accounts[0], { from: accounts[i] })
+        let sender_before = await moloch.members(accounts[i+1])
+        await moloch.delegateShares(accounts[0], { from: accounts[i+1] })
         console.log(`accounts${[i]} has delegated shares to accounts[0]`)
     }
     console.log("now need to vote to test")
@@ -758,7 +757,7 @@ let proposalsArray = [
     //   console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
   })
 
-  it('require fail - too many delegations to account', async () => {
+  it.skip('require fail - too many delegations to account', async () => {
     // same as above but delegateShares for 26th member shoould fail on require statment
   })
 
