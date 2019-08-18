@@ -739,6 +739,7 @@ let proposalsArray = [
       await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
       await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
       await moloch.processProposal(i+1, { from: accounts[9]})
+      console.log(await moloch.members(accounts[i]))
     }
   })
 
@@ -748,7 +749,7 @@ let proposalsArray = [
     for(i=0;i<23;i++){
         let sender_before = await moloch.members(accounts[i+1])
         await moloch.delegateShares(accounts[0], { from: accounts[i+1] })
-        console.log(`accounts${[i]} has delegated shares to accounts[0]`)
+        console.log(`accounts${[i+2]} has delegated shares to accounts[0]`) // i+2 because proposal0 = accounts[2]
     }
     console.log("now need to vote to test")
     //   let txHash = await moloch.submitVote(6, 1, { from: accounts[0] })
