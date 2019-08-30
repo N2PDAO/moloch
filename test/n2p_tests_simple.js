@@ -688,32 +688,33 @@ describe('delegateVote', () => {
 
 describe('delegateVote test for gas costs', () => {
 let proposalsArray = [
-  { applicant: accounts[2], tokenTribute: 100, sharesRequested: 8, details: "Third Proposal - getting 8 shares" }, // proposal 3
-  { applicant: accounts[3], tokenTribute: 100, sharesRequested: 8, details: "Fourth Proposal - getting 8 shares" },
-  { applicant: accounts[4], tokenTribute: 100, sharesRequested: 8, details: "Fifth Proposal - getting 8 shares" },
-  { applicant: accounts[5], tokenTribute: 100, sharesRequested: 8, details: "Sixth Proposal - getting 8 shares" },
-  { applicant: accounts[6], tokenTribute: 100, sharesRequested: 8, details: "Seventh Proposal - getting 8 shares" },
-  { applicant: accounts[7], tokenTribute: 100, sharesRequested: 8, details: "Eighth Proposal - getting 8 shares" },
-  { applicant: accounts[8], tokenTribute: 100, sharesRequested: 8, details: "Ninth Proposal - getting 8 shares" },
-  { applicant: accounts[9], tokenTribute: 100, sharesRequested: 8, details: "Tenth Proposal - getting 8 shares" },
-  { applicant: accounts[10], tokenTribute: 100, sharesRequested: 8, details: "Eleventh Proposal - getting 8 shares" },
-  { applicant: accounts[12], tokenTribute: 100, sharesRequested: 8, details: "Twelth Proposal - getting 8 shares" },
-  { applicant: accounts[13], tokenTribute: 100, sharesRequested: 8, details: "Thirteenth Proposal - getting 8 shares" },
-  { applicant: accounts[14], tokenTribute: 100, sharesRequested: 8, details: "Fourteenth Proposal - getting 8 shares" },
-  { applicant: accounts[15], tokenTribute: 100, sharesRequested: 8, details: "Fifteenth Proposal - getting 8 shares" },
-  { applicant: accounts[16], tokenTribute: 100, sharesRequested: 8, details: "Sixteenth Proposal - getting 8 shares" },
-  { applicant: accounts[17], tokenTribute: 100, sharesRequested: 8, details: "Seventeenth Proposal - getting 8 shares" },
-  { applicant: accounts[18], tokenTribute: 100, sharesRequested: 8, details: "Eighteenth Proposal - getting 8 shares" },
-  { applicant: accounts[19], tokenTribute: 100, sharesRequested: 8, details: "Nineteenth Proposal - getting 8 shares" },
-  { applicant: accounts[20], tokenTribute: 100, sharesRequested: 8, details: "Twenteeth Proposal - getting 8 shares" },
-  { applicant: accounts[21], tokenTribute: 100, sharesRequested: 8, details: "Twentyfirst Proposal - getting 8 shares" },
-  { applicant: accounts[22], tokenTribute: 100, sharesRequested: 8, details: "Twentysecond Proposal - getting 8 shares" },
-  { applicant: accounts[23], tokenTribute: 100, sharesRequested: 8, details: "Twentythird Proposal - getting 8 shares" },
-  { applicant: accounts[24], tokenTribute: 100, sharesRequested: 8, details: "Twentyfourth Proposal - getting 8 shares" },
-  { applicant: accounts[25], tokenTribute: 100, sharesRequested: 8, details: "Twentyfifth Proposal - getting 8 shares" },
-  { applicant: accounts[26], tokenTribute: 100, sharesRequested: 8, details: "Twentysixth Proposal - getting 8 shares" },
-  { applicant: accounts[27], tokenTribute: 100, sharesRequested: 8, details: "Twentyseventh Proposal - getting 8 shares" },
-  { applicant: accounts[28], tokenTribute: 100, sharesRequested: 8, details: "Twentyeighth Proposal - getting 8 shares" },
+  { applicant: accounts[2], tokenTribute: 100, sharesRequested: 8, details: "3rd Proposal - getting 8 shares" }, // proposal 3
+  { applicant: accounts[3], tokenTribute: 100, sharesRequested: 8, details: "4th Proposal - getting 8 shares" },
+  { applicant: accounts[4], tokenTribute: 100, sharesRequested: 8, details: "5th Proposal - getting 8 shares" },
+  { applicant: accounts[5], tokenTribute: 100, sharesRequested: 8, details: "6th Proposal - getting 8 shares" },
+  { applicant: accounts[6], tokenTribute: 100, sharesRequested: 8, details: "7th Proposal - getting 8 shares" },
+  { applicant: accounts[7], tokenTribute: 100, sharesRequested: 8, details: "8th Proposal - getting 8 shares" },
+  { applicant: accounts[8], tokenTribute: 100, sharesRequested: 8, details: "9th Proposal - getting 8 shares" },
+  { applicant: accounts[9], tokenTribute: 100, sharesRequested: 8, details: "10th Proposal - getting 8 shares" },
+  { applicant: accounts[10], tokenTribute: 100, sharesRequested: 8, details: "11th Proposal - getting 8 shares" },
+  { applicant: accounts[11], tokenTribute: 100, sharesRequested: 8, details: "12th Proposal - getting 8 shares" },
+  { applicant: accounts[12], tokenTribute: 100, sharesRequested: 8, details: "13th Proposal - getting 8 shares" },
+  { applicant: accounts[13], tokenTribute: 100, sharesRequested: 8, details: "14th Proposal - getting 8 shares" },
+  { applicant: accounts[14], tokenTribute: 100, sharesRequested: 8, details: "15th Proposal - getting 8 shares" },
+  { applicant: accounts[15], tokenTribute: 100, sharesRequested: 8, details: "16th - getting 8 shares" },
+  { applicant: accounts[16], tokenTribute: 100, sharesRequested: 8, details: "17th Proposal - getting 8 shares" },
+  { applicant: accounts[17], tokenTribute: 100, sharesRequested: 8, details: "18th Proposal - getting 8 shares" },
+  { applicant: accounts[18], tokenTribute: 100, sharesRequested: 8, details: "19th Proposal - getting 8 shares" },
+  { applicant: accounts[19], tokenTribute: 100, sharesRequested: 8, details: "20th Proposal - getting 8 shares" },
+  { applicant: accounts[20], tokenTribute: 100, sharesRequested: 8, details: "21st Proposal - getting 8 shares" },
+  { applicant: accounts[21], tokenTribute: 100, sharesRequested: 8, details: "22nd Proposal - getting 8 shares" },
+  { applicant: accounts[22], tokenTribute: 100, sharesRequested: 8, details: "23rd Proposal - getting 8 shares" },
+  { applicant: accounts[23], tokenTribute: 100, sharesRequested: 8, details: "24th Proposal - getting 8 shares" },
+  { applicant: accounts[24], tokenTribute: 100, sharesRequested: 8, details: "25th Proposal - getting 8 shares" },
+  { applicant: accounts[25], tokenTribute: 100, sharesRequested: 8, details: "26th Proposal - getting 8 shares" },
+  { applicant: accounts[26], tokenTribute: 100, sharesRequested: 8, details: "27th Proposal - getting 8 shares" },
+  { applicant: accounts[27], tokenTribute: 100, sharesRequested: 8, details: "28th Proposal - getting 8 shares" },
+  { applicant: accounts[28], tokenTribute: 100, sharesRequested: 8, details: "29th Proposal - getting 8 shares" }, // use for degelated vote test
 ]
 
   beforeEach(async () => {
@@ -729,7 +730,7 @@ let proposalsArray = [
 
     // REST OF THE PROPOSALS CAN BE WRITTEN INSIDE LOOP: proposalArray[0] = proposal3
     let i;
-    for(i=0;i<proposalsArray.length;i++){
+    for(i=0;i<proposalsArray.length-1;i++){
       await token.transfer(proposalsArray[i].applicant, proposalsArray[i].tokenTribute, { from: accounts[0] })
       await token.approve(moloch.address, 10, { from: accounts[0] })
       await token.approve(moloch.address, proposalsArray[i].tokenTribute, { from: proposalsArray[i].applicant })   // tokenTribute
@@ -739,27 +740,42 @@ let proposalsArray = [
       await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
       await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
       await moloch.processProposal(i+1, { from: accounts[9]})
-      console.log(await moloch.members(accounts[i]))
+      // console.log(`processed proposal at proposalIndex ${i+2}`) // first two have been processed outside of for loop
     }
   })
 
   it('happy case - multiple delegations to one account then vote', async () => {
+
     const delegate_before = await moloch.members(accounts[0])
     let i;
     for(i=0;i<23;i++){
         let sender_before = await moloch.members(accounts[i+1])
         await moloch.delegateShares(accounts[0], { from: accounts[i+1] })
-        console.log(`accounts${[i+2]} has delegated shares to accounts[0]`) // i+2 because proposal0 = accounts[2]
     }
-    console.log("now need to vote to test")
-    //   let txHash = await moloch.submitVote(6, 1, { from: accounts[0] })
-    //   console.log(`transaction hash from vote with delegated share: ${txHash.tx}`)
-    //   const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
-    //   console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
+    // console.log(proposalsArray[26])
+    await token.transfer(proposalsArray[26].applicant, proposalsArray[26].tokenTribute, { from: accounts[0] })
+    await token.approve(moloch.address, 10, { from: accounts[0] })
+    await token.approve(moloch.address, proposalsArray[26].tokenTribute, { from: proposalsArray[26].applicant })   // tokenTribute
+    await moloch.submitProposal(proposalsArray[26].applicant, proposalsArray[26].tokenTribute, proposalsArray[26].sharesRequested, proposalsArray[26].details, { from:  accounts[0] })
+    await moveForwardPeriods(1)
+    let txHash = await moloch.submitVote(27, 1, { from: accounts[0] })
+    await moveForwardPeriods(config.VOTING_DURATON_IN_PERIODS)
+    await moveForwardPeriods(config.GRACE_DURATON_IN_PERIODS)
+    await moloch.processProposal(27, { from: accounts[9]})
+    console.log(`transaction hash from vote with delegated share: ${txHash.tx}`)
+    const receipt = await web3.eth.getTransactionReceipt(txHash.tx)
+    console.log(`cumulative gas used in function: ${receipt.cumulativeGasUsed}`);
   })
 
-  it.skip('require fail - too many delegations to account', async () => {
-    // same as above but delegateShares for 26th member shoould fail on require statment
+  it('require fail - too many delegations to account', async () => {
+        const delegate_before = await moloch.members(accounts[0])
+        let i;
+        for(i=0;i<25;i++){
+            let sender_before = await moloch.members(accounts[i+1])
+            await moloch.delegateShares(accounts[0], { from: accounts[i+1] })
+        }
+        let sender_before = await moloch.members(accounts[26])
+        await moloch.delegateShares(accounts[0], { from: accounts[26] }).should.be.rejectedWith('delegate already has enough delegates')
   })
 
 })
