@@ -5,7 +5,8 @@ const Moloch = artifacts.require('./Moloch')
 const GuildBank = artifacts.require('./GuildBank')
 const Token = artifacts.require('./Token')
 
-const config = process.env.target != 'mainnet' ? require('./config.json').test : require('./config.json').mainnet
+const config = require('./config.json').test
+// const config = process.env.target != 'mainnet' ? require('./config.json').test : require('./config.json').mainnet
 
 module.exports = (deployer, network, accounts) => {
   deployer.then(async () => {

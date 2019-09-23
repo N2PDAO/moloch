@@ -1,18 +1,37 @@
+var HDWalletProvider = require("truffle-hdwallet-provider");
+const dotenv = require('dotenv')
+require('dotenv').config()
+
+var mnemonic = process.env.MNEMONIC;
+var infura_ropsten = process.env.INFURA_ROPSTEN;
+var infura_mainnet = process.env.INFURA_MAINNET;
+
 module.exports = {
   networks: {
     development: {
-      host: 'localhost',
+      host: "127.0.0.1",
       port: 8545,
-      gas: 8000000,
-      network_id: '*' // Match any network id
-    }
+      network_id: "*" // Match any network id
+    },
+    ropsten: {
+      provider: function() {
+        return new HDWalletProvider(mnemonic, infura_ropsten)
+      },
+      network_id: 3
+    },
+    mainnet: {
+			provider: function() {
+				return new HDWalletProvider(mnemonic, infura_mainnet)
+			},
+			network_id: 1
+		}
   },
   compilers: {
     solc: {
-      version: "0.5.3",
-    },
-  },
-}
+      version: "0.5.3"  // ex:  "0.4.20". (Default: Truffle's installed solc)
+     }
+  }
+};
 
 /*
 
